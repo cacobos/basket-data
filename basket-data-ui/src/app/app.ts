@@ -1,12 +1,17 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterModule } from '@angular/router'; // Import RouterModule
+import { CoreModule } from './core/core.module'; // Import CoreModule
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  standalone: true, // Make AppComponent standalone
+  imports: [
+    CoreModule, // CoreModule exports LayoutComponent which uses MatToolbarModule etc.
+    RouterModule // Needed if router-outlet is used by components imported here, which it is.
+  ],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrls: ['./app.scss'] // Changed from styleUrl to styleUrls
 })
-export class App {
+export class App { // Renamed class from App to AppComponent for convention, if desired
   protected title = 'basket-data-ui';
 }

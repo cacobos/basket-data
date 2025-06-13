@@ -1,0 +1,14 @@
+<mat-toolbar color="primary">
+  <span>Basketball Tactical App</span>
+  <span class="spacer"></span>
+  <ng-container *ngIf="authService.isAuthenticated(); else showLogin">
+    <!-- <span *ngIf="userEmail" class="user-email">{{ userEmail }}</span> -->
+    <button mat-button (click)="onLogout()">Logout</button>
+  </ng-container>
+  <ng-template #showLogin>
+    <button mat-button routerLink="/login">Login</button>
+  </ng-template>
+</mat-toolbar>
+<main class="content">
+  <router-outlet></router-outlet>
+</main>
