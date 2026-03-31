@@ -1,0 +1,24 @@
+{
+  "name": "scrap-utils",
+  "version": "1.0.0",
+  "description": "Utilidades de scraping en TypeScript",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsc -w -p tsconfig.json",
+    "clean": "rmdir /s /q dist",
+    "test": "echo \"Sin pruebas definidas\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0"
+  }
+}

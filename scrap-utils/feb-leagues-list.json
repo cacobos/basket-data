@@ -1,0 +1,146 @@
+[
+  {
+    "leagueId": "1",
+    "seasonId": "2025",
+    "slug": "primerafeb",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/primerafeb/1/2025"
+  },
+  {
+    "leagueId": "2",
+    "seasonId": "2025",
+    "slug": "segundafeb",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/segundafeb/2/2025"
+  },
+  {
+    "leagueId": "3",
+    "seasonId": "2025",
+    "slug": "tercerafeb",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/tercerafeb/3/2025"
+  },
+  {
+    "leagueId": "4",
+    "seasonId": "2025",
+    "slug": "lfendesa",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/lfendesa/4/2025"
+  },
+  {
+    "leagueId": "9",
+    "seasonId": "2025",
+    "slug": "lf2",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/lf2/9/2025"
+  },
+  {
+    "leagueId": "19",
+    "seasonId": "2025",
+    "slug": "cessaaminimas",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/cessaaminimas/19/2025"
+  },
+  {
+    "leagueId": "20",
+    "seasonId": "2025",
+    "slug": "cessaaminifem",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/cessaaminifem/20/2025"
+  },
+  {
+    "leagueId": "21",
+    "seasonId": "2025",
+    "slug": "cespclubesjrmasc",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/cespclubesjrmasc/21/2025"
+  },
+  {
+    "leagueId": "22",
+    "seasonId": "2025",
+    "slug": "cespclubesjrfem",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/cespclubesjrfem/22/2025"
+  },
+  {
+    "leagueId": "25",
+    "seasonId": "2025",
+    "slug": "cessaainfantilmas",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/cessaainfantilmas/25/2025"
+  },
+  {
+    "leagueId": "26",
+    "seasonId": "2025",
+    "slug": "cessaainfantilfem",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/cessaainfantilfem/26/2025"
+  },
+  {
+    "leagueId": "35",
+    "seasonId": "2025",
+    "slug": "cespclubescadmasc",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/cespclubescadmasc/35/2025"
+  },
+  {
+    "leagueId": "36",
+    "seasonId": "2025",
+    "slug": "cespclubescadfem",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/cespclubescadfem/36/2025"
+  },
+  {
+    "leagueId": "37",
+    "seasonId": "2025",
+    "slug": "cespclubesinfmasc",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/cespclubesinfmasc/37/2025"
+  },
+  {
+    "leagueId": "38",
+    "seasonId": "2025",
+    "slug": "cespclubesinffem",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/cespclubesinffem/38/2025"
+  },
+  {
+    "leagueId": "40",
+    "seasonId": "2025",
+    "slug": "cessaacadetemas",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/cessaacadetemas/40/2025"
+  },
+  {
+    "leagueId": "41",
+    "seasonId": "2025",
+    "slug": "cessaacadetefem",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/cessaacadetefem/41/2025"
+  },
+  {
+    "leagueId": "44",
+    "seasonId": "2025",
+    "slug": "fasefinal1divisinfemenin",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/fasefinal1divisinfemenin/44/2025"
+  },
+  {
+    "leagueId": "55",
+    "seasonId": "2025",
+    "slug": "minicopalfendesa",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/minicopalfendesa/55/2025"
+  },
+  {
+    "leagueId": "67",
+    "seasonId": "2025",
+    "slug": "lfchallenge",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/lfchallenge/67/2025"
+  },
+  {
+    "leagueId": "71",
+    "seasonId": "2025",
+    "slug": "cespclubesminimasc",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/cespclubesminimasc/71/2025"
+  },
+  {
+    "leagueId": "72",
+    "seasonId": "2025",
+    "slug": "cespclubesminifem",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/cespclubesminifem/72/2025"
+  },
+  {
+    "leagueId": "73",
+    "seasonId": "2025",
+    "slug": "copaespaa",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/copaespaa/73/2025"
+  },
+  {
+    "leagueId": "74",
+    "seasonId": "2025",
+    "slug": "ligau",
+    "statsUrl": "https://baloncestoenvivo.feb.es/estadisticas/ligau/74/2025"
+  }
+]

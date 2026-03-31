@@ -1,0 +1,90 @@
+{
+  "leagueId": "2",
+  "seasonId": "2025",
+  "slug": "segundafeb",
+  "selectedGroupId": "88880",
+  "groups": [
+    {
+      "groupId": "88880",
+      "name": "Liga Regular \"OESTE\"",
+      "selected": true
+    },
+    {
+      "groupId": "88879",
+      "name": "Liga Regular \"ESTE\"",
+      "selected": false
+    }
+  ],
+  "teams": [
+    {
+      "teamId": "979913",
+      "name": "BIELE ISB",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=979913"
+    },
+    {
+      "teamId": "981336",
+      "name": "C.B. STARLABS MORÓN",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981336"
+    },
+    {
+      "teamId": "981168",
+      "name": "CACERES PATRIMONIO DE LA HUMANIDAD",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981168"
+    },
+    {
+      "teamId": "979868",
+      "name": "CASTILLO DE GORRAIZ VALLE DE EGÜES",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=979868"
+    },
+    {
+      "teamId": "981237",
+      "name": "CÍRCULO GIJÓN BALONCESTO",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981237"
+    },
+    {
+      "teamId": "979786",
+      "name": "CLÍNICA PONFERRADA SDP",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=979786"
+    },
+    {
+      "teamId": "981151",
+      "name": "CLUB BALONCESTO TOLEDO BASKET",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981151"
+    },
+    {
+      "teamId": "981308",
+      "name": "COTO CÓRDOBA CB",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981308"
+    },
+    {
+      "teamId": "979781",
+      "name": "CULTURAL Y DEPORTIVA LEONESA",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=979781"
+    },
+    {
+      "teamId": "981309",
+      "name": "INSOLAC CAJA 87",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981309"
+    },
+    {
+      "teamId": "981320",
+      "name": "JAEN PARAÍSO INTERIOR CB",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981320"
+    },
+    {
+      "teamId": "980009",
+      "name": "LOGROBASKET LOGI7",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=980009"
+    },
+    {
+      "teamId": "981342",
+      "name": "REINA PROTEÍNAS CLAVIJO",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981342"
+    },
+    {
+      "teamId": "981241",
+      "name": "UEMC BALONCESTO VALLADOLID",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981241"
+    }
+  ]
+}

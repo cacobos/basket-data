@@ -1,0 +1,15 @@
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'FebLeague | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/analyzer/analyzer.component.ts:666:6:
+[37m      666 │       [32mselectedLeague[37m: this.selectedLeague(),
+          ╵       [32m~~~~~~~~~~~~~~[0m
+
+  The expected type comes from property 'selectedLeague' which is declared here on type 'JobState'
+
+    src/app/services/jobs-store.service.ts:7:2:
+[37m      7 │   [32mselectedLeague[37m?: string;
+        ╵   [32m~~~~~~~~~~~~~~[0m
+
+[39m[22m
+^C

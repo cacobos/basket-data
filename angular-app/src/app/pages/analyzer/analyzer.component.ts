@@ -1,0 +1,412 @@
+﻿import { CommonModule } from '@angular/common';
+import { Component, computed, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import {
+  AnalysisApiService,
+  FebLeague,
+  FebLeagueGroup,
+  FebLeagueTeam,
+} from '../../analysis-api.service';
+import { CardLeagueComponent } from '../../components/card-league/card-league.component';
+import { CardTeamComponent } from '../../components/card-team/card-team.component';
+import { JobsStoreService, JobState } from '../../services/jobs-store.service';
+
+@Component({
+  selector: 'app-analyzer',
+  standalone: true,
+  imports: [CommonModule, FormsModule, CardLeagueComponent, CardTeamComponent],
+  template: `
+    <div class="analyzer-page">
+      <header class="hero">
+        <h1>Analizador FEB</h1>
+        <p>Flujo completo con carrusel: liga, grupo, equipo, partidos y ejecución de job.</p>
+      </header>
+
+      <section class="carousel-shell">
+        <div class="steps-indicator">
+          <button class="step-pill" [class.active]="activeSlide() === 0" (click)="goToSlide(0)">
+            1. Liga
+          </button>
+          <button
+            class="step-pill"
+            [class.active]="activeSlide() === 1"
+            [disabled]="!selectedLeague()"
+            (click)="goToSlide(1)"
+          >
+            2. Grupo
+          </button>
+          <button
+            class="step-pill"
+            [class.active]="activeSlide() === 2"
+            [disabled]="!selectedGroupId()"
+            (click)="goToSlide(2)"
+          >
+            3. Equipo
+          </button>
+          <button
+            class="step-pill"
+            [class.active]="activeSlide() === 3"
+            [disabled]="!selectedTeamId()"
+            (click)="goToSlide(3)"
+          >
+            4. Lanzar Job
+          </button>
+        </div>
+
+        <div class="carousel-viewport">
+          <div class="carousel-track" [style.transform]="trackTransform()">
+            <section class="slide">
+              <h2>Selecciona liga</h2>
+              <div class="cards-grid">
+                <app-card-league
+                  *ngFor="let league of leagues()"
+                  [leagueId]="league.leagueId"
+                  [name]="league.slug"
+                  [isActive]="selectedLeague()?.leagueId === league.leagueId"
+                  (click)="onLeagueSelect(league)"
+                ></app-card-league>
+              </div>
+            </section>
+
+            <section class="slide">
+              <h2>Selecciona grupo</h2>
+              <div class="group-grid" *ngIf="groups().length > 0; else noGroups">
+                <button
+                  class="group-card"
+                  *ngFor="let group of groups()"
+                  [class.selected]="selectedGroupId() === group.groupId"
+                  (click)="onGroupSelect(group.groupId)"
+                >
+                  {{ group.name }}
+                </button>
+              </div>
+              <ng-template #noGroups>
+                <p class="muted">
+                  Esta liga no tiene grupos. Continuamos directo al paso de equipo.
+                </p>
+                <button class="primary" (click)="goToTeamsWithoutGroup()">Continuar</button>
+              </ng-template>
+            </section>
+
+            <section class="slide">
+              <h2>Selecciona equipo</h2>
+              <div class="cards-grid">
+                <app-card-team
+                  *ngFor="let team of teams()"
+                  [teamId]="team.teamId"
+                  [name]="team.name"
+                  [isActive]="selectedTeamId() === team.teamId"
+                  (click)="onTeamSelect(team)"
+                ></app-card-team>
+              </div>
+            </section>
+
+            <section class="slide">
+              <h2>Lanzar búsqueda</h2>
+              <p class="muted">
+                Los partidos se resolverán automáticamente en backend al crear el job.
+              </p>
+
+              <div class="launch-row">
+                <button class="primary" [disabled]="isLaunchDisabled()" (click)="launchJob()">
+                  {{ launching() ? 'Lanzando...' : 'Lanzar job de búsqueda' }}
+                </button>
+                <button class="ghost" (click)="goJobs()">Ver tabla de jobs</button>
+              </div>
+              <p class="muted" *ngIf="launchError()">{{ launchError() }}</p>
+            </section>
+          </div>
+        </div>
+      </section>
+    </div>
+  `,
+  styles: `
+    .analyzer-page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .hero {
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      margin: 0 0 6px;
+    }
+    .hero p {
+      margin: 0;
+      color: #556;
+    }
+
+    .carousel-shell {
+      background: #fff;
+      border: 1px solid #dde3ef;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 12px 28px rgba(20, 24, 40, 0.08);
+    }
+    .steps-indicator {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .step-pill {
+      border: 1px solid #c7d2e7;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: #f6f9ff;
+      cursor: pointer;
+    }
+    .step-pill.active {
+      border-color: #0b6f7f;
+      background: #e5f7f4;
+    }
+
+    .carousel-viewport {
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .carousel-track {
+      display: flex;
+      width: 400%;
+      transition: transform 420ms ease;
+    }
+    .slide {
+      width: 25%;
+      padding: 14px;
+      min-height: 430px;
+    }
+    .slide h2 {
+      margin-top: 0;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .group-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+    }
+    .group-card {
+      border: 1px solid #c7d2e7;
+      border-radius: 10px;
+      padding: 12px;
+      cursor: pointer;
+      background: #fff;
+    }
+    .group-card.selected {
+      background: #e5f7f4;
+      border-color: #0b6f7f;
+    }
+
+    .matches-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .match-card {
+      border: 1px solid #c7d2e7;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: left;
+      display: grid;
+      gap: 4px;
+      cursor: pointer;
+      background: #fff;
+    }
+    .match-card.selected {
+      background: #e5f7f4;
+      border-color: #0b6f7f;
+    }
+
+    .filters-row {
+      margin: 8px 0 10px;
+    }
+    .launch-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .primary {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, #0b6f7f, #0f9e8f);
+      color: #fff;
+      cursor: pointer;
+    }
+    .ghost {
+      border: 1px solid #c7d2e7;
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .muted {
+      color: #667;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  `,
+})
+export class AnalyzerComponent {
+  leagues = signal<FebLeague[]>([]);
+  groups = signal<FebLeagueGroup[]>([]);
+  teams = signal<FebLeagueTeam[]>([]);
+
+  selectedLeague = signal<FebLeague | null>(null);
+  selectedGroupId = signal<string>('');
+  selectedTeamId = signal<string>('');
+  selectedTeamName = signal<string>('');
+
+  launching = signal(false);
+  launchError = signal('');
+  activeSlide = signal(0);
+
+  trackTransform = computed(() => `translateX(-${this.activeSlide() * 25}%)`);
+
+  constructor(
+    private readonly api: AnalysisApiService,
+    private readonly jobsStore: JobsStoreService,
+    private readonly router: Router,
+  ) {
+    this.loadLeagues();
+  }
+
+  goToSlide(index: number): void {
+    this.activeSlide.set(index);
+  }
+
+  loadLeagues(): void {
+    this.api.getLeagues().subscribe({
+      next: (leagues) => this.leagues.set(leagues || []),
+      error: () => this.leagues.set([]),
+    });
+  }
+
+  onLeagueSelect(league: FebLeague): void {
+    this.selectedLeague.set(league);
+    this.selectedGroupId.set('');
+    this.selectedTeamId.set('');
+    this.selectedTeamName.set('');
+    this.groups.set([]);
+    this.teams.set([]);
+
+    this.api.getLeagueTeams(league.leagueId, league.seasonId, league.slug).subscribe({
+      next: (res) => {
+        this.groups.set(res.groups || []);
+        this.teams.set(res.groups?.length ? [] : res.teams || []);
+        this.activeSlide.set(1);
+        if ((res.groups || []).length === 0) {
+          this.activeSlide.set(2);
+        }
+      },
+      error: () => {
+        this.groups.set([]);
+        this.teams.set([]);
+      },
+    });
+  }
+
+  goToTeamsWithoutGroup(): void {
+    const league = this.selectedLeague();
+    if (!league) return;
+    this.api.getLeagueTeams(league.leagueId, league.seasonId, league.slug).subscribe({
+      next: (res) => {
+        this.teams.set(res.teams || []);
+        this.activeSlide.set(2);
+      },
+    });
+  }
+
+  onGroupSelect(groupId: string): void {
+    this.selectedGroupId.set(groupId);
+    this.selectedTeamId.set('');
+    this.selectedTeamName.set('');
+
+    const league = this.selectedLeague();
+    if (!league) return;
+
+    this.api.getLeagueTeams(league.leagueId, league.seasonId, league.slug, groupId).subscribe({
+      next: (res) => {
+        this.teams.set(res.teams || []);
+        this.activeSlide.set(2);
+      },
+      error: () => this.teams.set([]),
+    });
+  }
+
+  onTeamSelect(team: FebLeagueTeam): void {
+    this.selectedTeamId.set(team.teamId);
+    this.selectedTeamName.set(team.name);
+    this.launchError.set('');
+    this.activeSlide.set(3);
+  }
+
+  isLaunchDisabled(): boolean {
+    return this.launching() || !this.selectedTeamId();
+  }
+
+  launchJob(): void {
+    if (this.isLaunchDisabled()) return;
+
+    const teamId = this.selectedTeamId();
+    if (!teamId) {
+      return;
+    }
+
+    this.launching.set(true);
+    this.launchError.set('');
+
+    const request = {
+      matchIds: [],
+      teamId,
+      wonOnly: false,
+      lineupMode: 'any' as const,
+      playerIds: [],
+    };
+
+    this.api.createJob(request).subscribe({
+      next: (job) => {
+        const state: JobState = {
+          jobId: job.id,
+          status: job.status,
+          selectedLeague: this.selectedLeague()?.leagueId,
+          selectedLeagueName: this.selectedLeague()?.slug,
+          selectedTeam: this.selectedTeamName() || teamId,
+          selectedTeamId: teamId,
+          selectedTeamName: this.selectedTeamName() || teamId,
+          selectedMatches: [],
+          selectedPlayers: [],
+          matchIds: [],
+          lineupMode: 'any',
+          won_only: false,
+          createdAt: new Date(job.createdAt),
+          updatedAt: new Date(job.updatedAt),
+        };
+        this.jobsStore.addJob(state);
+        this.jobsStore.trackJob(job.id);
+        this.launching.set(false);
+        this.router.navigate(['/jobs']);
+      },
+      error: (err) => {
+        this.launching.set(false);
+        this.launchError.set('No se pudo crear el job.');
+        console.error(err);
+      },
+    });
+  }
+
+  goJobs(): void {
+    this.router.navigate(['/jobs']);
+  }
+}

@@ -1,0 +1,693 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { load } from 'cheerio';
+import * as path from 'path';
+import { pathToFileURL } from 'url';
+
+const FEB_BASE_URL = 'https://baloncestoenvivo.feb.es';
+const FEB_IMAGE_BASE_URL = 'https://imagenes.feb.es';
+
+export interface FebLeague {
+  leagueId: string;
+  seasonId: string;
+  slug: string;
+  statsUrl: string;
+}
+
+export interface FebLeagueGroup {
+  groupId: string;
+  name: string;
+  selected: boolean;
+}
+
+export interface FebLeagueTeam {
+  teamId: string;
+  name: string;
+  teamUrl: string;
+}
+
+export interface FebLeagueTeamsResult {
+  leagueId: string;
+  seasonId: string;
+  slug: string;
+  selectedGroupId: string;
+  groups: FebLeagueGroup[];
+  teams: FebLeagueTeam[];
+}
+
+export interface FebTeamPlayer {
+  playerId: string;
+  teamId: string;
+  name: string;
+  profileUrl: string;
+  photoUrl: string;
+}
+
+export interface FebTeamPlayersResult {
+  teamId: string;
+  teamName: string;
+  players: FebTeamPlayer[];
+}
+
+export interface FebActionPlayer extends FebTeamPlayer {
+  appearances: number;
+}
+
+export interface FebActionPlayersResult {
+  teamId: string;
+  matchIds: string[];
+  players: FebActionPlayer[];
+}
+
+export interface FebTeamMatch {
+  matchId: string;
+  ownTeamId: string;
+  opponentTeamId: string | null;
+  isHome: boolean | null;
+  won: boolean | null;
+  scoreFor: number | null;
+  scoreAgainst: number | null;
+}
+
+export interface FebTeamMatchesResult {
+  teamId: string;
+  matches: FebTeamMatch[];
+}
+
+export interface FebPlayerProfile {
+  playerId: string;
+  teamId: string;
+  name: string;
+  photoUrl: string;
+  profileUrl: string;
+  attributes: Record<string, string>;
+}
+
+interface ScrapUtilsModule {
+  getFebLeagues: () => Promise<FebLeague[]>;
+  getFebLeagueTeams: (
+    leagueId: string | number,
+    seasonId: string | number,
+    slug: string,
+    groupId?: string | number,
+  ) => Promise<FebLeagueTeamsResult>;
+  getFebPlayByPlay: (matchId: string | number) => Promise<{
+    rawPlayByPlay: {
+      LINES?: Array<{
+        idTeam?: string | null;
+        idPlayer?: string | null;
+        team?: string | null;
+        scoreA?: string | null;
+        scoreB?: string | null;
+      }>;
+    } | null;
+  }>;
+}
+
+@Injectable()
+export class FebService {
+  private cachedModule: ScrapUtilsModule | null = null;
+
+  private extractMatchIdFromHref(href: string): string | null {
+    const normalizedHref = href.replace(/&amp;/gi, '&');
+    const partidoAspxMatch = normalizedHref.match(/Partido\.aspx\?(?:p|i)=(\d+)/i);
+    if (partidoAspxMatch?.[1]) {
+      return partidoAspxMatch[1];
+    }
+
+    const prettyMatch = normalizedHref.match(/\/partido\/(\d+)/i);
+    if (prettyMatch?.[1]) {
+      return prettyMatch[1];
+    }
+
+    return null;
+  }
+
+  private normalizeFebUrl(rawHref: string): string {
+    const cleaned = rawHref.replace(/&amp;/gi, '&').trim();
+    if (!cleaned) {
+      return '';
+    }
+
+    if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+      return cleaned;
+    }
+
+    return `${FEB_BASE_URL}/${cleaned.replace(/^\/+/, '')}`;
+  }
+
+  private extractMatchIdsFromHtml(html: string): string[] {
+    const $ = load(html);
+    const ids = new Set<string>();
+
+    $('a[href]').each((_, element) => {
+      const href = $(element).attr('href') ?? '';
+      const matchId = this.extractMatchIdFromHref(href);
+      if (matchId) {
+        ids.add(matchId);
+      }
+    });
+
+    return Array.from(ids);
+  }
+
+  private extractCalendarUrlsFromHtml(html: string): string[] {
+    const $ = load(html);
+    const urls = new Set<string>();
+
+    $('a[href*="calendario"]').each((_, element) => {
+      const href = $(element).attr('href') ?? '';
+      if (!href) {
+        return;
+      }
+      urls.add(this.normalizeFebUrl(href));
+    });
+
+    const regex = /calendario\.aspx\?g=\d+&(?:amp;)?t=\d+&(?:amp;)?nm=[a-z0-9]+/gi;
+    let match = regex.exec(html);
+    while (match) {
+      const href = match[0] ?? '';
+      if (href) {
+        urls.add(this.normalizeFebUrl(href));
+      }
+      match = regex.exec(html);
+    }
+
+    return Array.from(urls).filter(Boolean);
+  }
+
+  private async extractMatchIdsFromCalendars(
+    calendarUrls: string[],
+    teamId?: string,
+  ): Promise<string[]> {
+    const ids = new Set<string>();
+    const normalizedTeamId = (teamId ?? '').trim();
+
+    for (const calendarUrl of calendarUrls) {
+      try {
+        const response = await fetch(calendarUrl);
+        if (!response.ok) {
+           console.warn(`[extractMatchIdsFromCalendars] Calendar fetch failed: ${calendarUrl} (status ${response.status})`);
+           continue;
+        }
+
+        const html = await response.text();
+        if (!normalizedTeamId) {
+          for (const matchId of this.extractMatchIdsFromHtml(html)) {
+              console.log(`[extractMatchIdsFromCalendars] Filtering calendar for team ${normalizedTeamId}...`);
+              let foundWithTeamFilter = 0;
+            ids.add(matchId);
+          }
+          continue;
+        }
+
+        const $ = load(html);
+        $('a[href]').each((_, element) => {
+          const href = $(element).attr('href') ?? '';
+          const matchId = this.extractMatchIdFromHref(href);
+          if (!matchId) {
+            return;
+          }
+
+          const container = $(element).closest('tr, li, article, section, div');
+          const includesTeam =
+            container.find(`a[href*="Equipo.aspx?i=${normalizedTeamId}"]`).length > 0 ||
+            container.find(`a[href*="/equipo/${normalizedTeamId}"]`).length > 0;
+
+          if (includesTeam) {
+                       foundWithTeamFilter++;
+              console.log(`[extractMatchIdsFromCalendars] Found ${foundWithTeamFilter} matches with team filter, total ids: ${ids.size}`);
+            ids.add(matchId);
+          }
+        });
+
+        if (ids.size === 0) {
+                   console.log(`[extractMatchIdsFromCalendars] No matches found with team filter. Falling back to all matches in calendar.`);
+                   console.log(`[extractMatchIdsFromCalendars] After fallback: total ids: ${ids.size}`);
+          for (const matchId of this.extractMatchIdsFromHtml(html)) {
+            ids.add(matchId);
+          }
+        }
+       } catch (error) {
+         console.error(`[extractMatchIdsFromCalendars] Error fetching calendar ${calendarUrl}:`, error);
+         // Ignore calendar fetch failures and continue with remaining URLs.
+       }
+    }
+
+    return Array.from(ids);
+  }
+
+  private async loadScrapUtilsModule(): Promise<ScrapUtilsModule> {
+    if (this.cachedModule) {
+      return this.cachedModule;
+    }
+
+    const modulePath = path.resolve(
+      process.cwd(),
+      '..',
+      'scrap-utils',
+      'dist',
+      'index.js',
+    );
+    const moduleUrl = pathToFileURL(modulePath).href;
+    const imported = (await import(moduleUrl)) as unknown as ScrapUtilsModule;
+    this.cachedModule = imported;
+    return imported;
+  }
+
+  async getLeagues(): Promise<FebLeague[]> {
+    const scrapUtils = await this.loadScrapUtilsModule();
+    return scrapUtils.getFebLeagues();
+  }
+
+  async getLeagueTeams(
+    leagueId: string | number,
+    seasonId: string | number,
+    slug: string,
+    groupId?: string,
+  ): Promise<FebLeagueTeamsResult> {
+    const scrapUtils = await this.loadScrapUtilsModule();
+    return scrapUtils.getFebLeagueTeams(leagueId, seasonId, slug, groupId);
+  }
+
+  async getTeamPlayers(teamId: string | number): Promise<FebTeamPlayersResult> {
+    const normalizedTeamId = String(teamId).trim();
+    const teamUrl = `${FEB_BASE_URL}/equipo/${normalizedTeamId}`;
+    const response = await fetch(teamUrl);
+    if (!response.ok) {
+      throw new NotFoundException(
+        `No se pudo cargar el equipo ${normalizedTeamId}`,
+      );
+    }
+
+    const html = await response.text();
+    const $ = load(html);
+
+    const teamName =
+      $('h1.titulo-modulo').first().text().trim() ||
+      $('h1').first().text().trim() ||
+      `Team ${normalizedTeamId}`;
+
+    const playersMap = new Map<string, FebTeamPlayer>();
+
+    $('a[href*="Jugador.aspx?i="]').each((_, element) => {
+      const href = $(element).attr('href') ?? '';
+      const idMatch = href.match(/[?&]c=(\d+)/i);
+      if (!idMatch) {
+        return;
+      }
+
+      const playerId = idMatch[1] ?? '';
+      if (!playerId) {
+        return;
+      }
+
+      const absoluteProfile = href.startsWith('http')
+        ? href
+        : `${FEB_BASE_URL}/${href.replace(/^\/+/, '')}`;
+      const name = $(element).text().trim();
+      if (!name) {
+        return;
+      }
+
+      if (!playersMap.has(playerId)) {
+        playersMap.set(playerId, {
+          playerId,
+          teamId: normalizedTeamId,
+          name,
+          profileUrl: absoluteProfile,
+          photoUrl: `${FEB_IMAGE_BASE_URL}/Foto.aspx?c=${playerId}`,
+        });
+      }
+    });
+
+    const players = Array.from(playersMap.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+
+    return {
+      teamId: normalizedTeamId,
+      teamName,
+      players,
+    };
+  }
+
+  async getActionPlayers(
+    teamId: string | number,
+    matchIds: Array<string | number>,
+  ): Promise<FebActionPlayersResult> {
+    const normalizedTeamId = String(teamId).trim();
+    const normalizedMatchIds = Array.from(
+      new Set(
+        matchIds
+          .map((id) => String(id).trim())
+          .filter((id) => /^\d+$/.test(id)),
+      ),
+    );
+
+    if (normalizedMatchIds.length === 0) {
+      return {
+        teamId: normalizedTeamId,
+        matchIds: [],
+        players: [],
+      };
+    }
+
+    const scrapUtils = await this.loadScrapUtilsModule();
+    const roster = await this.getTeamPlayers(normalizedTeamId);
+    const rosterById = new Map<string, FebTeamPlayer>(
+      roster.players.map((player) => [player.playerId, player]),
+    );
+    const appearances = new Map<string, number>();
+
+    for (const matchId of normalizedMatchIds) {
+      // Skip mock/fixture match IDs (used for UI testing)
+      if (!/^\d{6,}$/.test(matchId)) {
+        console.log(`[getActionPlayers] Skipping mock match ID: ${matchId}`);
+        continue;
+      }
+      const playByPlay = await scrapUtils.getFebPlayByPlay(matchId);
+      const lines = playByPlay.rawPlayByPlay?.LINES;
+      if (!Array.isArray(lines)) {
+        continue;
+      }
+
+      for (const line of lines) {
+        const lineTeamId = line?.idTeam ? String(line.idTeam).trim() : '';
+        const linePlayerId = line?.idPlayer ? String(line.idPlayer).trim() : '';
+        if (!linePlayerId || lineTeamId !== normalizedTeamId) {
+          continue;
+        }
+
+        appearances.set(linePlayerId, (appearances.get(linePlayerId) ?? 0) + 1);
+      }
+    }
+
+    // If no action data was found, use the full roster
+    let players: FebActionPlayer[];
+
+    if (appearances.size === 0) {
+      console.log(
+        `[getActionPlayers] No action data found in play-by-play for team ${normalizedTeamId}. Returning empty array.`,
+      );
+      players = [];
+    } else {
+      players = Array.from(appearances.entries()).map(([playerId, count]) => {
+        const fromRoster = rosterById.get(playerId);
+        return {
+          playerId,
+          teamId: normalizedTeamId,
+          name: fromRoster?.name ?? `Jugador ${playerId}`,
+          profileUrl:
+            fromRoster?.profileUrl ??
+            `${FEB_BASE_URL}/Jugador.aspx?i=${normalizedTeamId}&c=${playerId}`,
+          photoUrl:
+            fromRoster?.photoUrl ??
+            `${FEB_IMAGE_BASE_URL}/Foto.aspx?c=${playerId}`,
+          appearances: count,
+        };
+      });
+    }
+
+    return {
+      teamId: normalizedTeamId,
+      matchIds: normalizedMatchIds,
+      players: players.sort(
+        (a, b) => b.appearances - a.appearances || a.name.localeCompare(b.name),
+      ),
+    };
+  }
+
+  async getTeamMatches(teamId: string | number): Promise<FebTeamMatchesResult> {
+    const normalizedTeamId = String(teamId).trim();
+    const teamUrl = `${FEB_BASE_URL}/equipo/${normalizedTeamId}`;
+    const legacyTeamUrl = `${FEB_BASE_URL}/Equipo.aspx?i=${normalizedTeamId}`;
+    console.log(
+      `[getTeamMatches] Fetching matches for team: ${normalizedTeamId}, URL: ${teamUrl}`,
+    );
+    let response = await fetch(teamUrl);
+    if (!response.ok) {
+      response = await fetch(legacyTeamUrl);
+    }
+
+    if (!response.ok) {
+      console.error(
+        `[getTeamMatches] Failed to fetch team page: ${response.status}`,
+      );
+      throw new NotFoundException(
+        `No se pudo cargar los partidos del equipo ${normalizedTeamId}`,
+      );
+    }
+
+    const html = await response.text();
+    let matchIds = this.extractMatchIdsFromHtml(html);
+
+    if (matchIds.length === 0) {
+      const leagues = await this.getLeagues();
+      for (const league of leagues) {
+        try {
+          const teamsResult = await this.getLeagueTeams(
+            league.leagueId,
+            league.seasonId,
+            league.slug,
+          );
+          const belongsToLeague = teamsResult.teams.some(
+            (team) => team.teamId === normalizedTeamId,
+          );
+          if (!belongsToLeague) {
+            continue;
+          }
+
+          const calendarUrl = `${FEB_BASE_URL}/calendario.aspx?g=${league.leagueId}&t=${league.seasonId}&nm=${league.slug}`;
+          console.log(
+            `[getTeamMatches] Team ${normalizedTeamId} found in league ${league.slug}. Trying calendar ${calendarUrl}`,
+          );
+          const leagueMatchIds = await this.extractMatchIdsFromCalendars([
+            calendarUrl,
+          ], normalizedTeamId);
+          for (const matchId of leagueMatchIds) {
+            matchIds.push(matchId);
+          }
+          break;
+        } catch {
+          // Continue with next league if one fails.
+        }
+      }
+    }
+
+    matchIds = Array.from(new Set(matchIds));
+    console.log(
+      `[getTeamMatches] Found ${matchIds.length} matches for team ${normalizedTeamId}:`,
+      matchIds,
+    );
+
+    const scrapUtils = await this.loadScrapUtilsModule();
+    const matches: FebTeamMatch[] = [];
+
+    for (const matchId of matchIds) {
+      const playByPlay = await scrapUtils.getFebPlayByPlay(matchId);
+      const lines = playByPlay.rawPlayByPlay?.LINES;
++      if (!Array.isArray(lines) || lines.length === 0) {
+      try {
+        const playByPlay = await scrapUtils.getFebPlayByPlay(matchId);
+        const lines = playByPlay.rawPlayByPlay?.LINES;
+        if (!Array.isArray(lines) || lines.length === 0) {
+          console.log(
+            `[getTeamMatches] No valid play-by-play data for match ${matchId}. Skipping.`,
+          );
+          continue;
+        }
+
++        console.log(
++          `[getTeamMatches] No valid play-by-play data for match ${matchId}. Skipping.`,
++        );
++        continue;
++      }
++
+        continue;
+      }
+
+      let team1Id: string | null = null;
+      let team2Id: string | null = null;
+      let finalA: number | null = null;
+      let finalB: number | null = null;
+
+      for (const line of lines) {
+        const teamSlot = line?.team ? String(line.team).trim() : '';
+        const idTeam = line?.idTeam ? String(line.idTeam).trim() : '';
+        if (teamSlot === '1' && idTeam) {
+          team1Id = idTeam;
+        }
+        if (teamSlot === '2' && idTeam) {
+          team2Id = idTeam;
+        }
+
+        if (line?.scoreA != null && line.scoreA !== '') {
+          const value = Number(line.scoreA);
+          if (Number.isFinite(value)) {
+            finalA = value;
+          }
+        }
+        if (line?.scoreB != null && line.scoreB !== '') {
+          const value = Number(line.scoreB);
+          if (Number.isFinite(value)) {
+            finalB = value;
+          }
+        }
+      }
+
+      if (!team1Id || !team2Id) {
+        continue;
+      }
+
+      if (team1Id !== normalizedTeamId && team2Id !== normalizedTeamId) {
+        +        console.log(
+        +          `[getTeamMatches] Team ${normalizedTeamId} not found in match ${matchId} (teams: ${team1Id} vs ${team2Id}). Skipping.`,
+        +        );
+        continue;
+      }
+
+      const isHome =
+        team1Id && team2Id
+          ? team1Id === normalizedTeamId
+            ? true
+            : team2Id === normalizedTeamId
+              ? false
+              : null
+          : null;
+
+      const opponentTeamId =
+        team1Id && team2Id
+          ? team1Id === normalizedTeamId
+            ? team2Id
+            : team2Id === normalizedTeamId
+              ? team1Id
+              : null
+          : null;
+
+      let scoreFor: number | null = null;
+      let scoreAgainst: number | null = null;
+      let won: boolean | null = null;
+
+      if (finalA != null && finalB != null && team1Id && team2Id) {
+        if (team1Id === normalizedTeamId) {
+          scoreFor = finalA;
+          scoreAgainst = finalB;
+        } else if (team2Id === normalizedTeamId) {
+          scoreFor = finalB;
+          scoreAgainst = finalA;
+        }
+
+        if (scoreFor != null && scoreAgainst != null) {
+          won = scoreFor > scoreAgainst;
+        }
+      }
+
+      } catch (error) {
+        console.error(
+          `[getTeamMatches] Error processing match ${matchId}:`,
+          error,
+        );
+        continue;
+      }
+      matches.push({
+        matchId,
+        ownTeamId: normalizedTeamId,
+        opponentTeamId,
+        isHome,
+        won,
+        scoreFor,
+        scoreAgainst,
+      +      } catch (error) {
+      +        console.error(
+      +          `[getTeamMatches] Error processing match ${matchId}:`,
+      +          error,
+      +        );
+      +        continue;
+      +      }
+      });
+    }
+
+    // Si no hay partidos reales, devolver vacío en lugar de mocks.
+    if (matches.length === 0) {
+      console.log(
+        `[getTeamMatches] No real matches found for team ${normalizedTeamId}. Returning empty list.`,
+      );
+      return {
+        teamId: normalizedTeamId,
+        matches: [],
+      };
+    }
+
+    return {
+      teamId: normalizedTeamId,
+      matches: matches.sort((a, b) => Number(b.matchId) - Number(a.matchId)),
+    };
+  }
+
+  async getPlayerById(
+    playerId: string | number,
+    teamId?: string,
+  ): Promise<FebPlayerProfile> {
+    const normalizedPlayerId = String(playerId).trim();
+    const normalizedTeamId = (teamId ?? '').trim();
+
+    if (!normalizedTeamId) {
+      throw new NotFoundException(
+        'Para consultar jugador por id sin navegador, envía también teamId.',
+      );
+    }
+
+    const profileUrl = `${FEB_BASE_URL}/Jugador.aspx?i=${normalizedTeamId}&c=${normalizedPlayerId}`;
+    const response = await fetch(profileUrl);
+    if (!response.ok) {
+      throw new NotFoundException(
+        `No se pudo cargar la ficha del jugador ${normalizedPlayerId}`,
+      );
+    }
+
+    const html = await response.text();
+    const $ = load(html);
+
+    const nameFromCard = $('div.nombre').first().text().trim();
+    const nameFromPageHeading =
+      $('h1.titulo-modulo').first().text().trim() ||
+      $('h1').first().text().trim();
+    const name =
+      nameFromCard ||
+      (nameFromPageHeading &&
+      !/trayectoria|estad[íi]sticas/i.test(nameFromPageHeading)
+        ? nameFromPageHeading
+        : '') ||
+      `Player ${normalizedPlayerId}`;
+
+    const attributes: Record<string, string> = {};
+
+    $('span.label, .label').each((_, labelElement) => {
+      const label = $(labelElement).text().replace(/:\s*$/, '').trim();
+      const value = $(labelElement).next().text().trim();
+      if (label && value) {
+        attributes[label] = value;
+      }
+    });
+
+    $('tr').each((_, row) => {
+      const cells = $(row).find('td');
+      if (cells.length >= 2) {
+        const key = $(cells[0]).text().replace(/:\s*$/, '').trim();
+        const value = $(cells[1]).text().trim();
+        if (key && value && !attributes[key]) {
+          attributes[key] = value;
+        }
+      }
+    });
+
+    return {
+      playerId: normalizedPlayerId,
+      teamId: normalizedTeamId,
+      name,
+      photoUrl: `${FEB_IMAGE_BASE_URL}/Foto.aspx?c=${normalizedPlayerId}`,
+      profileUrl,
+      attributes,
+    };
+  }
+}

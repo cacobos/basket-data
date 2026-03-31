@@ -1,0 +1,90 @@
+{
+  "leagueId": "2",
+  "seasonId": "2025",
+  "slug": "segundafeb",
+  "selectedGroupId": "88879",
+  "groups": [
+    {
+      "groupId": "88880",
+      "name": "Liga Regular \"OESTE\"",
+      "selected": false
+    },
+    {
+      "groupId": "88879",
+      "name": "Liga Regular \"ESTE\"",
+      "selected": true
+    }
+  ],
+  "teams": [
+    {
+      "teamId": "979996",
+      "name": "AMICS CASTELLÓ",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=979996"
+    },
+    {
+      "teamId": "979897",
+      "name": "BUENO ARENAS ALBACETE BASKET",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=979897"
+    },
+    {
+      "teamId": "981491",
+      "name": "C.B. GETAFE",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981491"
+    },
+    {
+      "teamId": "981294",
+      "name": "C.B. ZARAGOZA",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981294"
+    },
+    {
+      "teamId": "981358",
+      "name": "CIUDAD MOLINA BASKET",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981358"
+    },
+    {
+      "teamId": "981216",
+      "name": "CLASS BASQUET SANT ANTONI",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981216"
+    },
+    {
+      "teamId": "981490",
+      "name": "CLUB ESPORTIU BÀSQUET LLÍRIA",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981490"
+    },
+    {
+      "teamId": "981428",
+      "name": "HOMS U.E.MATARÓ",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981428"
+    },
+    {
+      "teamId": "981281",
+      "name": "LOBE HUESCA LA MAGIA",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981281"
+    },
+    {
+      "teamId": "981275",
+      "name": "MADERAS SORLI BENICARLO",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981275"
+    },
+    {
+      "teamId": "981207",
+      "name": "OCA GLOBAL C.B. SALOU",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981207"
+    },
+    {
+      "teamId": "981347",
+      "name": "PROINBENI UPB GANDIA",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981347"
+    },
+    {
+      "teamId": "981305",
+      "name": "SOL GIRONÈS BISBAL BÀSQUET",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981305"
+    },
+    {
+      "teamId": "981514",
+      "name": "SPANISH BASKETBALL ACADEMY",
+      "teamUrl": "https://baloncestoenvivo.feb.es/Equipo.aspx?i=981514"
+    }
+  ]
+}
