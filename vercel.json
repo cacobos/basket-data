@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "cd nest-api && npm run build && cd ../angular-app && npm run build && cd ..",
   "framework": "nestjs",
   "functions": {
     "api/server.ts": {
