@@ -1,7 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { RuntimeConfig } from './runtime-config';
 
 export interface AnalysisRequest {
   matchIds: number[];
@@ -18,6 +17,50 @@ export interface AnalysisJob {
   createdAt: string;
   updatedAt: string;
   error?: string;
+  launchedBy?: JobLauncher | null;
+  request?: {
+    teamId?: string;
+    matchIds?: number[];
+    playerIds?: string[];
+    opponentTeamId?: string;
+    wonOnly?: boolean;
+    lineupMode?: 'any' | 'all';
+  };
+  result?: AnalysisResult;
+}
+
+export interface JobLauncher {
+  userId?: string;
+  email?: string;
+  displayName?: string;
+  provider?: string;
+}
+
+export interface TeamSearchLock {
+  teamId: string;
+  jobId: string;
+  status: AnalysisJob['status'];
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface FebLiveMatch {
+  matchId: string;
+  homeTeamId: string | null;
+  awayTeamId: string | null;
+  quarter: number | null;
+  clock: string | null;
+  score: string | null;
+  lastAction: string | null;
+  source: 'league-scan';
+}
+
+export interface FebLivePossessionSummary {
+  matchId: string;
+  teamId: string;
+  ownOffense: number;
+  opponentOffense: number;
+  total: number;
 }
 
 export interface TeamPossessionItem {
@@ -162,6 +205,14 @@ export class AnalysisApiService {
     return this.http.post<AnalysisJob>(`${this.apiBase}/analysis/jobs`, payload);
   }
 
+  listJobs(): Observable<AnalysisJob[]> {
+    return this.http.get<AnalysisJob[]>(`${this.apiBase}/analysis/jobs`);
+  }
+
+  getTeamLocks(): Observable<TeamSearchLock[]> {
+    return this.http.get<TeamSearchLock[]>(`${this.apiBase}/analysis/team-locks`);
+  }
+
   getJob(jobId: string): Observable<AnalysisJob> {
     return this.http.get<AnalysisJob>(`${this.apiBase}/analysis/jobs/${jobId}`);
   }
@@ -222,5 +273,15 @@ export class AnalysisApiService {
     }
 
     return `${base}?authToken=${encodeURIComponent(authToken)}`;
+  }
+
+  getLiveMatches(): Observable<FebLiveMatch[]> {
+    return this.http.get<FebLiveMatch[]>(`${this.apiBase}/feb/live/matches`);
+  }
+
+  getLiveMatchPossessions(matchId: string, teamId: string): Observable<FebLivePossessionSummary> {
+    return this.http.get<FebLivePossessionSummary>(
+      `${this.apiBase}/feb/live/matches/${encodeURIComponent(matchId)}/possessions?teamId=${encodeURIComponent(teamId)}`,
+    );
   }
 }

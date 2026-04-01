@@ -1,5 +1,10 @@
 import { Injectable, signal } from '@angular/core';
-import { AnalysisApiService, AnalysisResult } from '../analysis-api.service';
+import {
+  AnalysisApiService,
+  AnalysisJob,
+  AnalysisResult,
+  JobLauncher,
+} from '../analysis-api.service';
 import { AuthService } from './auth.service';
 
 export interface JobState {
@@ -20,14 +25,13 @@ export interface JobState {
   createdAt: Date;
   updatedAt: Date;
   errorMessage?: string;
+  launchedBy?: JobLauncher | null;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class JobsStoreService {
-  private static readonly JOB_TTL_MS = 24 * 60 * 60 * 1000;
-
   readonly jobs = signal<JobState[]>([]);
   readonly currentJob = signal<JobState | null>(null);
   private readonly eventSources = new Map<string, EventSource>();
@@ -37,54 +41,49 @@ export class JobsStoreService {
     private readonly api: AnalysisApiService,
     private readonly auth: AuthService,
   ) {
-    this.loadJobs();
-    this.pruneExpiredJobs();
+    this.refreshSharedJobs();
   }
 
-  private loadJobs(): void {
-    // Cargar jobs del localStorage
-    const stored = localStorage.getItem('jobs');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as Array<
-          Omit<JobState, 'createdAt' | 'updatedAt'> & {
-            createdAt: string;
-            updatedAt: string;
+  refreshSharedJobs(): void {
+    this.api.listJobs().subscribe({
+      next: (jobs) => {
+        const mapped = jobs.map((job) => this.mapServerJob(job));
+        this.jobs.set(mapped);
+        for (const job of mapped) {
+          if (job.status === 'queued' || job.status === 'processing') {
+            this.trackJob(job.jobId);
           }
-        >;
-        this.jobs.set(
-          parsed.map((job) => ({
-            ...job,
-            createdAt: new Date(job.createdAt),
-            updatedAt: new Date(job.updatedAt),
-          })),
-        );
-      } catch {
+        }
+      },
+      error: () => {
         this.jobs.set([]);
-      }
-    }
+      },
+    });
   }
 
-  private saveJobs(): void {
-    this.pruneExpiredJobs();
-    localStorage.setItem('jobs', JSON.stringify(this.jobs()));
-  }
-
-  private pruneExpiredJobs(): void {
-    const now = Date.now();
-    const filtered = this.jobs().filter(
-      (job) => now - new Date(job.createdAt).getTime() < JobsStoreService.JOB_TTL_MS,
-    );
-
-    if (filtered.length !== this.jobs().length) {
-      this.jobs.set(filtered);
-    }
+  private mapServerJob(job: AnalysisJob): JobState {
+    return {
+      jobId: job.id,
+      status: job.status,
+      selectedTeamId: job.request?.teamId,
+      selectedTeamName: job.request?.teamId,
+      selectedMatches: [],
+      selectedPlayers: job.request?.playerIds ?? [],
+      matchIds: (job.request?.matchIds ?? []).map(String),
+      lineupMode: job.request?.lineupMode === 'all' ? 'all' : 'any',
+      won_only: Boolean(job.request?.wonOnly),
+      opponent_team_id: job.request?.opponentTeamId,
+      result: job.result,
+      createdAt: new Date(job.createdAt),
+      updatedAt: new Date(job.updatedAt),
+      errorMessage: job.error,
+      launchedBy: job.launchedBy ?? null,
+    };
   }
 
   addJob(job: JobState): void {
     const current = this.jobs();
     this.jobs.set([job, ...current]);
-    this.saveJobs();
   }
 
   updateJob(jobId: string, update: Partial<JobState>): void {
@@ -92,7 +91,6 @@ export class JobsStoreService {
     this.jobs.set(
       current.map((j) => (j.jobId === jobId ? { ...j, ...update, updatedAt: new Date() } : j)),
     );
-    this.saveJobs();
   }
 
   trackJob(jobId: string): void {
@@ -198,16 +196,15 @@ export class JobsStoreService {
   }
 
   deleteJob(jobId: string): void {
+    // Shared jobs viven en backend; se recarga para mantener consistencia global.
     this.stopTracking(jobId);
-    this.jobs.set(this.jobs().filter((j) => j.jobId !== jobId));
-    this.saveJobs();
+    this.refreshSharedJobs();
   }
 
   clearAll(): void {
     for (const job of this.jobs()) {
       this.stopTracking(job.jobId);
     }
-    this.jobs.set([]);
-    this.saveJobs();
+    this.refreshSharedJobs();
   }
 }

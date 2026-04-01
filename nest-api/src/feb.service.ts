@@ -83,6 +83,17 @@ export interface FebPlayerProfile {
   attributes: Record<string, string>;
 }
 
+export interface FebLiveMatch {
+  matchId: string;
+  homeTeamId: string | null;
+  awayTeamId: string | null;
+  quarter: number | null;
+  clock: string | null;
+  score: string | null;
+  lastAction: string | null;
+  source: 'league-scan';
+}
+
 interface ScrapUtilsModule {
   getFebLeagues: () => Promise<FebLeague[]>;
   getFebLeagueTeams: (
@@ -96,11 +107,26 @@ interface ScrapUtilsModule {
       LINES?: Array<{
         idTeam?: string | null;
         idPlayer?: string | null;
+        action?: string | null;
+        text?: string | null;
+        time?: string | null;
+        quarter?: string | number | null;
         team?: string | null;
         scoreA?: string | null;
         scoreB?: string | null;
       }>;
     } | null;
+  }>;
+  getTeamPossessionReport: (
+    matchId: string | number,
+    ownTeamId: string | number,
+  ) => Promise<{
+    matchId: string;
+    ownTeamId: string;
+    opponentTeamId: string;
+    ownOffense: unknown[];
+    opponentOffense: unknown[];
+    all: unknown[];
   }>;
 }
 
@@ -255,10 +281,19 @@ export class FebService {
       path.resolve(process.cwd(), 'api', 'scrap-utils', 'dist', 'index.js'),
       path.resolve(process.cwd(), 'scrap-utils', 'dist', 'index.js'),
       path.resolve(process.cwd(), '..', 'scrap-utils', 'dist', 'index.js'),
-      path.resolve(process.cwd(), '..', '..', 'scrap-utils', 'dist', 'index.js'),
+      path.resolve(
+        process.cwd(),
+        '..',
+        '..',
+        'scrap-utils',
+        'dist',
+        'index.js',
+      ),
     ];
 
-    const modulePath = candidatePaths.find((candidate) => existsSync(candidate));
+    const modulePath = candidatePaths.find((candidate) =>
+      existsSync(candidate),
+    );
     if (!modulePath) {
       throw new NotFoundException(
         'No se encontró scrap-utils/dist/index.js. Ejecuta build de scrap-utils o revisa el despliegue.',
@@ -484,6 +519,9 @@ export class FebService {
             [calendarUrl],
             normalizedTeamId,
           );
+          console.log(
+            `[getTeamMatches] extractMatchIdsFromCalendars returned ${leagueMatchIds.length} IDs for team ${normalizedTeamId}.`,
+          );
           for (const matchId of leagueMatchIds) {
             matchIds.push(matchId);
           }
@@ -498,6 +536,9 @@ export class FebService {
     }
 
     matchIds = Array.from(new Set(matchIds));
+    console.log(
+      `[getTeamMatches] Candidate match IDs for team ${normalizedTeamId}: ${matchIds.length}`,
+    );
     console.log(
       `[getTeamMatches] Starting play-by-play validation for ${matchIds.length} matchIds...`,
     );
@@ -604,6 +645,26 @@ export class FebService {
     }
 
     if (matches.length === 0) {
+      if (matchIds.length > 0) {
+        console.log(
+          `[getTeamMatches] No valid matches after strict validation for team ${normalizedTeamId}. Returning ${matchIds.length} fallback IDs.`,
+        );
+        return {
+          teamId: normalizedTeamId,
+          matches: matchIds
+            .map((matchId) => ({
+              matchId,
+              ownTeamId: normalizedTeamId,
+              opponentTeamId: null,
+              isHome: null,
+              won: null,
+              scoreFor: null,
+              scoreAgainst: null,
+            }))
+            .sort((a, b) => Number(b.matchId) - Number(a.matchId)),
+        };
+      }
+
       console.log(
         `[getTeamMatches] No valid matches found for team ${normalizedTeamId}. Returning empty list.`,
       );
@@ -687,6 +748,122 @@ export class FebService {
       photoUrl: `${FEB_IMAGE_BASE_URL}/Foto.aspx?c=${normalizedPlayerId}`,
       profileUrl,
       attributes,
+    };
+  }
+
+  async getLiveMatches(): Promise<FebLiveMatch[]> {
+    const leagues = await this.getLeagues();
+    const candidateMatchIds = new Set<string>();
+
+    // Scan acotado para no saturar la API de FEB.
+    for (const league of leagues.slice(0, 3)) {
+      try {
+        const teamsResult = await this.getLeagueTeams(
+          league.leagueId,
+          league.seasonId,
+          league.slug,
+        );
+        for (const team of (teamsResult.teams ?? []).slice(0, 4)) {
+          const teamMatches = await this.getTeamMatches(team.teamId);
+          for (const match of (teamMatches.matches ?? []).slice(0, 3)) {
+            candidateMatchIds.add(match.matchId);
+            if (candidateMatchIds.size >= 40) {
+              break;
+            }
+          }
+          if (candidateMatchIds.size >= 40) {
+            break;
+          }
+        }
+      } catch {
+        continue;
+      }
+
+      if (candidateMatchIds.size >= 40) {
+        break;
+      }
+    }
+
+    const scrapUtils = await this.loadScrapUtilsModule();
+    const liveMatches: FebLiveMatch[] = [];
+
+    for (const matchId of candidateMatchIds) {
+      try {
+        const playByPlay = await scrapUtils.getFebPlayByPlay(matchId);
+        const lines = playByPlay.rawPlayByPlay?.LINES;
+        if (!Array.isArray(lines) || lines.length === 0) {
+          continue;
+        }
+
+        const latest = lines[lines.length - 1];
+        const quarter = latest?.quarter != null ? Number(latest.quarter) : null;
+        const clock = latest?.time ? String(latest.time).trim() : null;
+        const score =
+          latest?.scoreA != null && latest?.scoreB != null
+            ? `${latest.scoreA}-${latest.scoreB}`
+            : null;
+        const lastAction = latest?.text ? String(latest.text).trim() : null;
+
+        let homeTeamId: string | null = null;
+        let awayTeamId: string | null = null;
+        for (const line of lines) {
+          const slot = line?.team ? String(line.team).trim() : '';
+          const id = line?.idTeam ? String(line.idTeam).trim() : '';
+          if (slot === '1' && id) {
+            homeTeamId = id;
+          }
+          if (slot === '2' && id) {
+            awayTeamId = id;
+          }
+        }
+
+        const maybeLive =
+          quarter != null &&
+          quarter >= 1 &&
+          clock != null &&
+          clock !== '' &&
+          clock !== '00:00';
+
+        if (!maybeLive) {
+          continue;
+        }
+
+        liveMatches.push({
+          matchId,
+          homeTeamId,
+          awayTeamId,
+          quarter,
+          clock,
+          score,
+          lastAction,
+          source: 'league-scan',
+        });
+      } catch {
+        continue;
+      }
+    }
+
+    return liveMatches.sort((a, b) => Number(b.matchId) - Number(a.matchId));
+  }
+
+  async getLiveMatchPossessions(
+    matchId: string,
+    teamId: string,
+  ): Promise<{
+    matchId: string;
+    teamId: string;
+    ownOffense: number;
+    opponentOffense: number;
+    total: number;
+  }> {
+    const scrapUtils = await this.loadScrapUtilsModule();
+    const report = await scrapUtils.getTeamPossessionReport(matchId, teamId);
+    return {
+      matchId: report.matchId,
+      teamId,
+      ownOffense: report.ownOffense.length,
+      opponentOffense: report.opponentOffense.length,
+      total: report.all.length,
     };
   }
 }

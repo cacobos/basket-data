@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed } from '@angular/core';
+import { Component, OnInit, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { JobTableComponent } from '../../components/job-table/job-table.component';
 import { JobsStoreService } from '../../services/jobs-store.service';
@@ -11,8 +11,8 @@ import { JobsStoreService } from '../../services/jobs-store.service';
   template: `
     <div class="jobs-list-container">
       <header class="jobs-header">
-        <h1>📋 Mis busquedas</h1>
-        <p>Consulta tus analisis guardados y su estado</p>
+        <h1>📋 Busquedas compartidas</h1>
+        <p>Listado comun para todos los usuarios autenticados (retencion de 24h)</p>
       </header>
 
       <div class="filters">
@@ -34,13 +34,11 @@ import { JobsStoreService } from '../../services/jobs-store.service';
           <span class="stat">Errores: {{ failedCount() }}</span>
         </div>
 
-        <button class="btn-clear" (click)="onClearAll()" *ngIf="allJobs().length > 0">
-          🗑️ Limpiar Historial
-        </button>
+        <button class="btn-refresh" (click)="refreshJobs()">↻ Actualizar</button>
       </div>
 
       <div class="jobs-content">
-        <app-job-table [jobs]="filteredJobs()" (onDelete)="onDeleteJob($event)"></app-job-table>
+        <app-job-table [jobs]="filteredJobs()"></app-job-table>
       </div>
     </div>
   `,
@@ -113,9 +111,9 @@ import { JobsStoreService } from '../../services/jobs-store.service';
       color: #667eea;
     }
 
-    .btn-clear {
+    .btn-refresh {
       padding: 8px 16px;
-      background: #dc3545;
+      background: #0b6f7f;
       color: white;
       border: none;
       border-radius: 6px;
@@ -124,8 +122,8 @@ import { JobsStoreService } from '../../services/jobs-store.service';
       transition: all 0.3s;
     }
 
-    .btn-clear:hover {
-      background: #c82333;
+    .btn-refresh:hover {
+      background: #0a5c69;
     }
 
     .jobs-content {
@@ -153,7 +151,7 @@ import { JobsStoreService } from '../../services/jobs-store.service';
     }
   `,
 })
-export class JobsListComponent {
+export class JobsListComponent implements OnInit {
   selectedStatus = '';
 
   filteredJobs = computed(() => {
@@ -169,6 +167,10 @@ export class JobsListComponent {
 
   constructor(private jobsStore: JobsStoreService) {}
 
+  ngOnInit(): void {
+    this.refreshJobs();
+  }
+
   allJobs() {
     return this.jobsStore.jobs();
   }
@@ -177,15 +179,7 @@ export class JobsListComponent {
     // Computed se actualiza automáticamente
   }
 
-  onDeleteJob(jobId: string): void {
-    if (confirm('¿Eliminar este trabajo?')) {
-      this.jobsStore.deleteJob(jobId);
-    }
-  }
-
-  onClearAll(): void {
-    if (confirm('¿Limpiar TODO el historial?')) {
-      this.jobsStore.clearAll();
-    }
+  refreshJobs(): void {
+    this.jobsStore.refreshSharedJobs();
   }
 }

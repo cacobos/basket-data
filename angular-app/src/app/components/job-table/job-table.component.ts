@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { JobState } from '../../services/jobs-store.service';
 import { StatusBadgeComponent } from '../status-badge/status-badge.component';
@@ -14,20 +14,39 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
         <thead>
           <tr>
             <th>Equipo</th>
-            <th>Rival</th>
-            <th>Jugadores</th>
+            <th>Usuario</th>
+            <th>Resumen</th>
             <th>Estado</th>
             <th>Creado</th>
-            <th>Acciones</th>
+            <th>Detalle</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let job of jobs" [class.completed]="job.status === 'completed'">
-            <td>{{ displayTeamName(job) }}</td>
-            <td>{{ job.opponent_team_id ? 'Rival seleccionado' : '-' }}</td>
-            <td class="player-count">{{ job.selectedPlayers.length }} jugador(es)</td>
+            <td>
+              <div class="cell-stack">
+                <strong>{{ displayTeamName(job) }}</strong>
+                <span class="cell-meta">{{ displayTeamReference(job) }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="cell-stack">
+                <strong>{{ displayLauncher(job) }}</strong>
+                <span class="cell-meta">{{ displayLauncherMeta(job) }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="cell-stack">
+                <strong>{{ displaySummary(job) }}</strong>
+                <span class="cell-meta">{{ displaySelectionDetails(job) }}</span>
+              </div>
+            </td>
             <td>
               <app-status-badge [status]="job.status"></app-status-badge>
+              <div class="status-note" *ngIf="job.errorMessage">{{ job.errorMessage }}</div>
+              <div class="status-note" *ngIf="job.status === 'completed' && !job.errorMessage">
+                Resultado listo
+              </div>
             </td>
             <td class="created-at">{{ formatDate(job.createdAt) }}</td>
             <td class="actions">
@@ -39,9 +58,7 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
               >
                 👁️ Ver
               </a>
-              <button class="btn-delete" (click)="onDelete.emit(job.jobId)" title="Eliminar">
-                🗑️
-              </button>
+              <span *ngIf="job.status !== 'completed' && job.status !== 'failed'">-</span>
             </td>
           </tr>
         </tbody>
@@ -105,6 +122,27 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
       color: #667eea;
     }
 
+    .cell-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .cell-meta {
+      color: #6b7280;
+      font-size: 0.85rem;
+      line-height: 1.2;
+    }
+
+    .status-note {
+      margin-top: 6px;
+      color: #6b7280;
+      font-size: 0.82rem;
+      line-height: 1.3;
+      max-width: 260px;
+      word-break: break-word;
+    }
+
     .created-at {
       font-size: 0.9rem;
       color: #999;
@@ -116,8 +154,7 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
       align-items: center;
     }
 
-    .btn-detail,
-    .btn-delete {
+    .btn-detail {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -137,14 +174,6 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
 
     .btn-detail:hover {
       background: #f0f4ff;
-    }
-
-    .btn-delete {
-      color: #dc3545;
-    }
-
-    .btn-delete:hover {
-      background: #fff5f5;
     }
 
     .empty-state {
@@ -177,7 +206,6 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
 })
 export class JobTableComponent {
   @Input() jobs: JobState[] = [];
-  @Output() onDelete = new EventEmitter<string>();
 
   displayTeamName(job: JobState): string {
     const preferredName = (job.selectedTeamName || '').trim();
@@ -191,6 +219,72 @@ export class JobTableComponent {
     }
 
     return 'Equipo seleccionado';
+  }
+
+  displayTeamReference(job: JobState): string {
+    const teamId = (job.selectedTeamId || job.selectedTeam || '').trim();
+    return teamId ? `ID ${teamId}` : 'Sin ID de equipo';
+  }
+
+  displayLauncher(job: JobState): string {
+    const launcher = job.launchedBy;
+    if (!launcher) {
+      return 'Usuario desconocido';
+    }
+
+    const name = (launcher.displayName || '').trim();
+    if (name) {
+      return name;
+    }
+
+    const email = (launcher.email || '').trim();
+    if (email) {
+      return email;
+    }
+
+    const userId = (launcher.userId || '').trim();
+    return userId || 'Usuario desconocido';
+  }
+
+  displayLauncherMeta(job: JobState): string {
+    const launcher = job.launchedBy;
+    if (!launcher) {
+      return 'Sin datos de autor';
+    }
+
+    const pieces: string[] = [];
+    if (launcher.email) {
+      pieces.push(launcher.email);
+    }
+    if (launcher.provider) {
+      pieces.push(launcher.provider);
+    }
+
+    return pieces.length > 0 ? pieces.join(' · ') : 'Autor registrado';
+  }
+
+  displaySummary(job: JobState): string {
+    const matches = job.matchIds.length;
+    const players = job.selectedPlayers.length;
+    return `${matches} partido(s) · ${players} jugador(es)`;
+  }
+
+  displaySelectionDetails(job: JobState): string {
+    const pieces: string[] = [];
+
+    if (job.lineupMode) {
+      pieces.push(`lineup ${job.lineupMode}`);
+    }
+
+    if (job.won_only) {
+      pieces.push('solo victorias');
+    }
+
+    if (job.opponent_team_id) {
+      pieces.push(`rival ${job.opponent_team_id}`);
+    }
+
+    return pieces.length > 0 ? pieces.join(' · ') : 'Busqueda sin filtros extra';
   }
 
   formatDate(date: Date): string {

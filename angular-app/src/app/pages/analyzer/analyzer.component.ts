@@ -7,6 +7,7 @@ import {
   FebLeague,
   FebLeagueGroup,
   FebLeagueTeam,
+  TeamSearchLock,
 } from '../../analysis-api.service';
 import { CardLeagueComponent } from '../../components/card-league/card-league.component';
 import { CardTeamComponent } from '../../components/card-team/card-team.component';
@@ -91,12 +92,15 @@ import { JobsStoreService, JobState } from '../../services/jobs-store.service';
 
             <section class="slide">
               <h2>Selecciona equipo</h2>
+              <p class="muted" *ngIf="teamSelectionMessage()">{{ teamSelectionMessage() }}</p>
               <div class="cards-grid">
                 <app-card-team
                   *ngFor="let team of teams()"
                   [teamId]="team.teamId"
                   [name]="team.name"
                   [isActive]="selectedTeamId() === team.teamId"
+                  [disabled]="isTeamLocked(team.teamId)"
+                  [disabledReason]="teamLockReason(team.teamId)"
                   (click)="onTeamSelect(team)"
                 ></app-card-team>
               </div>
@@ -104,9 +108,7 @@ import { JobsStoreService, JobState } from '../../services/jobs-store.service';
 
             <section class="slide">
               <h2>Lanzar busqueda</h2>
-              <p class="muted">
-                Los partidos se resolveran automaticamente al crear la busqueda.
-              </p>
+              <p class="muted">Los partidos se resolveran automaticamente al crear la busqueda.</p>
 
               <div class="launch-row">
                 <button class="primary" [disabled]="isLaunchDisabled()" (click)="launchJob()">
@@ -115,6 +117,10 @@ import { JobsStoreService, JobState } from '../../services/jobs-store.service';
                 <button class="ghost" (click)="goJobs()">Ver mis busquedas</button>
               </div>
               <p class="muted" *ngIf="launchError()">{{ launchError() }}</p>
+              <p class="muted" *ngIf="selectedTeamId() && isTeamLocked(selectedTeamId())">
+                Este equipo ya tiene una busqueda compartida activa/reciente. Se habilitara al
+                expirar en 24h.
+              </p>
             </section>
           </div>
         </div>
@@ -271,6 +277,8 @@ export class AnalyzerComponent {
   launching = signal(false);
   launchError = signal('');
   activeSlide = signal(0);
+  teamLocks = signal<TeamSearchLock[]>([]);
+  teamSelectionMessage = signal('');
 
   trackTransform = computed(() => `translateX(-${this.activeSlide() * 25}%)`);
 
@@ -280,6 +288,14 @@ export class AnalyzerComponent {
     private readonly router: Router,
   ) {
     this.loadLeagues();
+    this.loadTeamLocks();
+  }
+
+  loadTeamLocks(): void {
+    this.api.getTeamLocks().subscribe({
+      next: (locks) => this.teamLocks.set(locks || []),
+      error: () => this.teamLocks.set([]),
+    });
   }
 
   goToSlide(index: number): void {
@@ -300,6 +316,7 @@ export class AnalyzerComponent {
     this.selectedTeamName.set('');
     this.groups.set([]);
     this.teams.set([]);
+    this.teamSelectionMessage.set('');
 
     this.api.getLeagueTeams(league.leagueId, league.seasonId, league.slug).subscribe({
       next: (res) => {
@@ -309,6 +326,7 @@ export class AnalyzerComponent {
         if ((res.groups || []).length === 0) {
           this.activeSlide.set(2);
         }
+        this.showTeamLocksMessage();
       },
       error: () => {
         this.groups.set([]);
@@ -324,6 +342,7 @@ export class AnalyzerComponent {
       next: (res) => {
         this.teams.set(res.teams || []);
         this.activeSlide.set(2);
+        this.showTeamLocksMessage();
       },
     });
   }
@@ -340,20 +359,60 @@ export class AnalyzerComponent {
       next: (res) => {
         this.teams.set(res.teams || []);
         this.activeSlide.set(2);
+        this.showTeamLocksMessage();
       },
       error: () => this.teams.set([]),
     });
   }
 
   onTeamSelect(team: FebLeagueTeam): void {
+    if (this.isTeamLocked(team.teamId)) {
+      return;
+    }
+
     this.selectedTeamId.set(team.teamId);
     this.selectedTeamName.set(team.name);
     this.launchError.set('');
     this.activeSlide.set(3);
   }
 
+  isTeamLocked(teamId: string): boolean {
+    return this.teamLocks().some((lock) => lock.teamId === String(teamId));
+  }
+
+  private getTeamLock(teamId: string): TeamSearchLock | null {
+    return this.teamLocks().find((lock) => lock.teamId === String(teamId)) ?? null;
+  }
+
+  teamLockReason(teamId: string): string {
+    const lock = this.getTeamLock(teamId);
+    if (!lock) {
+      return '';
+    }
+
+    const expiresAt = new Date(lock.expiresAt).toLocaleString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    return `Bloqueado hasta ${expiresAt}`;
+  }
+
+  private showTeamLocksMessage(): void {
+    const totalLocked = this.teams().filter((team) => this.isTeamLocked(team.teamId)).length;
+    if (totalLocked === 0) {
+      this.teamSelectionMessage.set('');
+      return;
+    }
+
+    this.teamSelectionMessage.set(
+      `${totalLocked} equipo(s) tienen busquedas recientes y aparecen deshabilitados hasta cumplir 24h.`,
+    );
+  }
+
   isLaunchDisabled(): boolean {
-    return this.launching() || !this.selectedTeamId();
+    return this.launching() || !this.selectedTeamId() || this.isTeamLocked(this.selectedTeamId());
   }
 
   launchJob(): void {
@@ -392,14 +451,23 @@ export class AnalyzerComponent {
           won_only: false,
           createdAt: new Date(job.createdAt),
           updatedAt: new Date(job.updatedAt),
+          launchedBy: job.launchedBy ?? null,
         };
         this.jobsStore.addJob(state);
         this.jobsStore.trackJob(job.id);
+        this.loadTeamLocks();
         this.launching.set(false);
         this.router.navigate(['/busquedas']);
       },
       error: (err) => {
         this.launching.set(false);
+        const text = String((err as { error?: { message?: string } })?.error?.message || '');
+        if (text.includes('Ya existe una busqueda para este equipo')) {
+          this.launchError.set(text);
+          this.loadTeamLocks();
+          return;
+        }
+
         this.launchError.set('No se pudo crear la busqueda.');
         console.error(err);
       },

@@ -8,278 +8,217 @@ import { RouterLink } from '@angular/router';
   imports: [CommonModule, RouterLink],
   template: `
     <div class="home-container">
-      <!-- Hero Section -->
       <section class="hero">
-        <div class="hero-content">
-          <h1>Basket Data</h1>
+        <div class="hero-main">
+          <h1>Centro operativo</h1>
           <p class="subtitle">
-            Convierte estadisticas complejas en respuestas claras para entrenadores y staff.
+            Gestiona busquedas compartidas, evita duplicidades por equipo y consulta partidos en
+            vivo con un flujo unico.
           </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" routerLink="/analyzer">Nueva busqueda</a>
+            <a class="btn btn-secondary" routerLink="/en-vivo">Ver en vivo</a>
+          </div>
+        </div>
+        <div class="hero-note">
+          <h3>Reglas activas</h3>
+          <ul>
+            <li>Busquedas visibles para todos los usuarios autenticados</li>
+            <li>Bloqueo automatico por equipo mientras exista una busqueda activa</li>
+            <li>Retencion de 24h para resultados y estado de jobs</li>
+          </ul>
         </div>
       </section>
 
-      <!-- Features Grid -->
-      <section class="features">
-        <div class="feature-card">
-          <div class="feature-icon">📊</div>
-          <h2>Nueva busqueda guiada</h2>
+      <section class="modules">
+        <article class="module-card">
+          <h2>Analizador FEB</h2>
           <p>
-            Elige competicion y equipo en 4 pasos simples. Nosotros hacemos el procesamiento por
-            ti.
+            Flujo guiado por competicion, grupo y equipo. El sistema bloquea equipos ocupados para
+            evitar analisis duplicados.
           </p>
-          <a class="btn btn-primary" routerLink="/analyzer">Empezar ahora →</a>
-        </div>
+          <a class="inline-link" routerLink="/analyzer">Abrir analizador</a>
+        </article>
 
-        <div class="feature-card">
-          <div class="feature-icon">📋</div>
-          <h2>Mis busquedas</h2>
+        <article class="module-card">
+          <h2>Busquedas compartidas</h2>
           <p>
-            Consulta resultados anteriores, filtra por estado y abre cada analisis cuando lo
-            necesites.
+            Vista centralizada de trabajos en cola, procesando, completados y con error para todo
+            el staff.
           </p>
-          <a class="btn btn-secondary" routerLink="/busquedas">Ver busquedas →</a>
-        </div>
+          <a class="inline-link" routerLink="/busquedas">Ir al listado</a>
+        </article>
 
-        <div class="feature-card">
-          <div class="feature-icon">⚡</div>
-          <h2>Datos oficiales FEB</h2>
+        <article class="module-card">
+          <h2>Partidos en vivo</h2>
           <p>
-            Trabaja con informacion actualizada directamente desde la FEB para tomar decisiones con
-            contexto real.
+            Deteccion de encuentros activos y consulta de resumen de posesiones por equipo en una
+            pantalla independiente.
           </p>
-          <div class="badge">Actualizado constantemente</div>
-        </div>
+          <a class="inline-link" routerLink="/en-vivo">Abrir modulo en vivo</a>
+        </article>
       </section>
 
-      <!-- Info Section -->
-      <section class="info">
-        <h2>Como funciona</h2>
-        <div class="steps">
-          <div class="step">
-            <span class="step-number">1</span>
-            <h3>Elige competicion</h3>
-            <p>Selecciona la liga o categoria que vas a revisar</p>
-          </div>
-          <div class="step">
-            <span class="step-number">2</span>
-            <h3>Selecciona equipo</h3>
-            <p>Marca el equipo sobre el que quieres obtener informacion</p>
-          </div>
-          <div class="step">
-            <span class="step-number">3</span>
-            <h3>Confirma grupo</h3>
-            <p>Si aplica, elige grupo para acotar la busqueda</p>
-          </div>
-          <div class="step">
-            <span class="step-number">4</span>
-            <h3>Lanza la busqueda</h3>
-            <p>Inicia el procesamiento con un clic</p>
-          </div>
-          <div class="step">
-            <span class="step-number">5</span>
-            <h3>Abre resultados</h3>
-            <p>Revisa tablas de posesiones y quintetos filtrables</p>
-          </div>
-          <div class="step">
-            <span class="step-number">6</span>
-            <h3>Comparte insights</h3>
-            <p>Exporta JSON o CSV para compartir con tu equipo tecnico</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- CTA -->
-      <section class="cta">
-        <h2>Empieza en menos de 1 minuto</h2>
-        <p>Crea tu primera busqueda y consulta resultados claros, sin lenguaje tecnico.</p>
-        <a class="btn btn-large" routerLink="/analyzer">Crear nueva busqueda</a>
+      <section class="checklist">
+        <h2>Flujo recomendado de uso</h2>
+        <ol>
+          <li>Revisar si el equipo ya tiene una busqueda activa.</li>
+          <li>Lanzar una nueva busqueda solo si el equipo esta disponible.</li>
+          <li>Consultar resultados compartidos y abrir el detalle del job.</li>
+          <li>Usar modulo en vivo para contraste tactico inmediato.</li>
+        </ol>
       </section>
     </div>
   `,
   styles: `
     .home-container {
       width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
     }
 
     .hero {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background:
+        radial-gradient(circle at 90% 20%, rgba(78, 207, 190, 0.26), transparent 35%),
+        linear-gradient(135deg, #083f4a 0%, #0b6f7f 55%, #28a3b4 100%);
       color: white;
-      padding: 80px 20px;
-      text-align: center;
+      border-radius: 18px;
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 20px;
     }
 
-    .hero-content h1 {
-      font-size: 3.5rem;
-      margin: 0 0 10px 0;
-      font-weight: 700;
+    .hero-main h1 {
+      margin: 0 0 8px;
+      font-size: 2.2rem;
+      font-family: 'Space Grotesk', sans-serif;
     }
 
     .subtitle {
-      font-size: 1.25rem;
       margin: 0;
-      opacity: 0.9;
+      max-width: 680px;
+      opacity: 0.95;
     }
 
-    .features {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 30px;
-      padding: 80px 20px;
-      max-width: 1200px;
-      margin: 0 auto;
+    .hero-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
     }
 
-    .feature-card {
-      background: white;
-      border-radius: 12px;
-      padding: 30px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    .hero-note {
+      background: rgba(3, 23, 28, 0.26);
+      border: 1px solid rgba(183, 239, 231, 0.32);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .hero-note h3 {
+      margin: 0 0 8px;
+    }
+
+    .hero-note ul {
+      margin: 0;
+      padding-left: 18px;
       display: flex;
       flex-direction: column;
-      gap: 15px;
-      transition:
-        transform 0.3s,
-        box-shadow 0.3s;
+      gap: 6px;
     }
 
-    .feature-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+    .modules {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
     }
 
-    .feature-icon {
-      font-size: 3rem;
-      display: inline-block;
+    .module-card {
+      background: white;
+      border: 1px solid #dbe7ec;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 5px 18px rgba(9, 41, 55, 0.08);
     }
 
-    .feature-card h2 {
-      font-size: 1.5rem;
+    .module-card h2 {
+      margin: 0 0 6px;
+      font-size: 1.25rem;
+      font-family: 'Space Grotesk', sans-serif;
+      color: #093742;
+    }
+
+    .module-card p {
+      margin: 0 0 12px;
+      color: #415465;
+    }
+
+    .checklist {
+      background: #f2f8fb;
+      border: 1px solid #d6e5eb;
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .checklist h2 {
+      margin: 0 0 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      color: #0a4957;
+    }
+
+    .checklist ol {
       margin: 0;
-    }
-
-    .feature-card p {
-      margin: 0;
-      color: #666;
-    }
-
-    .badge {
-      display: inline-block;
-      background: #667eea;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      width: fit-content;
+      padding-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
     .btn {
       display: inline-block;
-      padding: 12px 24px;
-      border-radius: 8px;
+      padding: 10px 16px;
+      border-radius: 10px;
       text-decoration: none;
-      font-weight: 600;
-      transition: all 0.3s;
+      font-weight: 700;
       text-align: center;
-      cursor: pointer;
-      border: none;
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
 
     .btn-primary {
-      background: #667eea;
-      color: white;
+      background: #f6c451;
+      color: #28313d;
     }
 
     .btn-primary:hover {
-      background: #5568d3;
+      background: #e6b546;
     }
 
     .btn-secondary {
-      background: #f0f0f0;
-      color: #333;
+      background: rgba(240, 248, 250, 0.95);
+      color: #0b6f7f;
     }
 
     .btn-secondary:hover {
-      background: #e0e0e0;
+      background: #e4f2f5;
     }
 
-    .btn-large {
-      padding: 16px 40px;
-      font-size: 1.1rem;
-    }
-
-    .info {
-      padding: 80px 20px;
-      background: #f5f5f5;
-    }
-
-    .info h2 {
-      text-align: center;
-      font-size: 2.5rem;
-      margin-bottom: 50px;
-    }
-
-    .steps {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 30px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .step {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .step-number {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 50px;
-      height: 50px;
-      background: #667eea;
-      color: white;
-      border-radius: 50%;
+    .inline-link {
+      color: #0b6f7f;
       font-weight: 700;
-      font-size: 1.5rem;
+      text-decoration: none;
     }
 
-    .step h3 {
-      margin: 0;
-      font-size: 1.2rem;
+    .inline-link:hover {
+      text-decoration: underline;
     }
 
-    .step p {
-      margin: 0;
-      color: #666;
-    }
-
-    .cta {
-      text-align: center;
-      padding: 60px 20px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-    }
-
-    .cta h2 {
-      font-size: 2.5rem;
-      margin-bottom: 10px;
-    }
-
-    .cta p {
-      font-size: 1.1rem;
-      margin-bottom: 30px;
-    }
-
-    @media (max-width: 768px) {
-      .hero-content h1 {
-        font-size: 2rem;
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
       }
 
-      .steps {
-        grid-template-columns: 1fr;
+      .hero-main h1 {
+        font-size: 1.8rem;
       }
     }
   `,

@@ -13,6 +13,7 @@ import {
   FebActionPlayersResult,
   FebLeague,
   FebLeagueTeamsResult,
+  FebLiveMatch,
   FebPlayerProfile,
   FebService,
   FebTeamMatchesResult,
@@ -114,5 +115,26 @@ export class FebController {
     @Query('teamId') teamId?: string,
   ): Promise<FebPlayerProfile> {
     return this.febService.getPlayerById(playerId, teamId);
+  }
+
+  @Get('live/matches')
+  @UseGuards(FirebaseAuthGuard)
+  async getLiveMatches(): Promise<FebLiveMatch[]> {
+    return this.febService.getLiveMatches();
+  }
+
+  @Get('live/matches/:matchId/possessions')
+  @UseGuards(FirebaseAuthGuard)
+  async getLiveMatchPossessions(
+    @Param('matchId') matchId: string,
+    @Query('teamId') teamId: string,
+  ): Promise<{
+    matchId: string;
+    teamId: string;
+    ownOffense: number;
+    opponentOffense: number;
+    total: number;
+  }> {
+    return this.febService.getLiveMatchPossessions(matchId, teamId);
   }
 }

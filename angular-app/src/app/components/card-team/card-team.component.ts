@@ -7,13 +7,16 @@ import { ImageAssetService } from '../../services/image-asset.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="team-card" [class.active]="isActive">
+    <div class="team-card" [class.active]="isActive" [class.disabled]="disabled">
       <div class="team-shield">
         <img [src]="shield" [alt]="name" (error)="onImageError()" />
       </div>
       <div class="team-info">
         <h3>{{ name }}</h3>
         <p class="team-meta">Equipo FEB</p>
+        <p class="team-lock" *ngIf="disabled">
+          {{ disabledReason || 'Busqueda bloqueada temporalmente' }}
+        </p>
       </div>
     </div>
   `,
@@ -44,6 +47,20 @@ import { ImageAssetService } from '../../services/image-asset.service';
       box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
 
+    .team-card.disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      border-style: dashed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .team-card.disabled:hover {
+      border-color: #ddd;
+      box-shadow: none;
+      transform: none;
+    }
+
     .team-shield {
       width: 70px;
       height: 70px;
@@ -72,12 +89,21 @@ import { ImageAssetService } from '../../services/image-asset.service';
       color: #999;
       text-align: center;
     }
+
+    .team-lock {
+      margin: 4px 0 0;
+      font-size: 0.72rem;
+      color: #8a3b1d;
+      text-align: center;
+    }
   `,
 })
 export class CardTeamComponent {
   @Input() teamId!: string;
   @Input() name!: string;
   @Input() isActive = false;
+  @Input() disabled = false;
+  @Input() disabledReason = '';
 
   shield!: string;
 

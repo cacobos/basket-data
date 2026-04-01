@@ -14,10 +14,31 @@ async function bootstrap() {
     .split(',')
     .map((origin) => origin.trim())
     .filter((origin) => origin.length > 0);
-  const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+  const allowedOrigins = Array.from(
+    new Set([...defaultOrigins, ...envOrigins]),
+  );
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Permite clientes sin Origin (curl, herramientas server-to-server).
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      // Acepta despliegues de Vercel (produccion y previews).
+      if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Origin no permitido por CORS: ${origin}`), false);
+    },
     credentials: true,
   });
   await app.listen(process.env.PORT ?? 3000);

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { Component, effect } from '@angular/core';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { AuthService } from './services/auth.service';
 
 @Component({
@@ -11,7 +11,10 @@ import { AuthService } from './services/auth.service';
     <div class="app-root">
       <nav class="navbar">
         <div class="nav-container">
-          <a routerLink="/" class="logo">🏀 Basket Data</a>
+          <a routerLink="/" class="logo">
+            <img src="/logo.png" alt="Basket Data" />
+            <span>Basket Data</span>
+          </a>
           <div class="nav-links">
             <a
               routerLink="/"
@@ -22,7 +25,8 @@ import { AuthService } from './services/auth.service';
               Inicio
             </a>
             <a routerLink="/analyzer" class="nav-link" routerLinkActive="active"> Nueva busqueda </a>
-            <a routerLink="/busquedas" class="nav-link" routerLinkActive="active"> Mis busquedas </a>
+            <a routerLink="/busquedas" class="nav-link" routerLinkActive="active"> Busquedas </a>
+            <a routerLink="/en-vivo" class="nav-link" routerLinkActive="active"> En vivo </a>
           </div>
 
           <div class="auth-actions">
@@ -39,7 +43,7 @@ import { AuthService } from './services/auth.service';
       </main>
 
       <footer class="footer">
-        <p>&copy; 2026 Basket Data. Busquedas guiadas de baloncesto con datos oficiales FEB.</p>
+        <p>&copy; 2026 Basket Data. Scouting FEB compartido con retencion automatica de 24h.</p>
       </footer>
     </div>
   `,
@@ -70,17 +74,24 @@ import { AuthService } from './services/auth.service';
     }
 
     .logo {
-      font-size: 1.5rem;
+      font-size: 1.2rem;
       font-weight: 700;
-      color: #667eea;
+      color: #0b6f7f;
       text-decoration: none;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+    }
+
+    .logo img {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      object-fit: cover;
     }
 
     .logo:hover {
-      color: #5568d3;
+      color: #0a5c69;
     }
 
     .nav-links {
@@ -122,12 +133,12 @@ import { AuthService } from './services/auth.service';
     }
 
     .nav-link:hover {
-      color: #667eea;
+      color: #0b6f7f;
     }
 
     .nav-link.active {
-      color: #667eea;
-      border-bottom-color: #667eea;
+      color: #0b6f7f;
+      border-bottom-color: #0b6f7f;
     }
 
     .main-content {
@@ -169,9 +180,25 @@ import { AuthService } from './services/auth.service';
   `,
 })
 export class App {
-  constructor(public readonly auth: AuthService) {}
+  constructor(
+    public readonly auth: AuthService,
+    private readonly router: Router,
+  ) {
+    effect(() => {
+      if (this.auth.loading()) {
+        return;
+      }
+
+      if (!this.auth.canUseApp() && this.router.url !== '/acceso') {
+        void this.router.navigate(['/acceso'], { replaceUrl: true });
+      }
+    });
+  }
 
   logout(): void {
-    this.auth.logout().catch(() => undefined);
+    this.auth
+      .logout()
+      .then(() => this.router.navigate(['/acceso'], { replaceUrl: true }))
+      .catch(() => undefined);
   }
 }
