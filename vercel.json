@@ -1,0 +1,34 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "nest-api/package.json",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["dist/**"],
+        "excludeFiles": ["node_modules/**"]
+      }
+    },
+    {
+      "src": "angular-app/angular.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "nest-api/dist/main.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "angular-app/dist/angular-app/browser/index.html"
+    }
+  ],
+  "env": {
+    "DATABASE_URL": "@db_url",
+    "NODE_ENV": "production"
+  }
+}
