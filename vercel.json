@@ -10,10 +10,10 @@
       }
     },
     {
-      "src": "angular-app/angular.json",
+      "src": "angular-app/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist"
+        "distDir": "dist/angular-app"
       }
     }
   ],
@@ -24,11 +24,10 @@
     },
     {
       "src": "/(.*)",
-      "dest": "angular-app/dist/angular-app/browser/index.html"
+      "dest": "/angular-app/dist/angular-app/browser/index.html"
     }
   ],
   "env": {
-    "DATABASE_URL": "@db_url",
     "NODE_ENV": "production"
   }
 }
