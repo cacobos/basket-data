@@ -106,6 +106,7 @@ export declare class AnalysisService {
     getJobResult(jobId: string): AnalysisResult;
     getJobEvents(jobId: string): Observable<JobEvent>;
     private normalizeRequest;
+    private ensureLineupHasFivePlayers;
     private processJob;
     private computeMatchWon;
     private updateJobStatus;

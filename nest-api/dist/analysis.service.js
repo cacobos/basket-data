@@ -125,6 +125,20 @@ let AnalysisService = class AnalysisService {
             lineupMode: request.lineupMode === 'all' ? 'all' : 'any',
         };
     }
+    ensureLineupHasFivePlayers(lineup) {
+        if (!Array.isArray(lineup)) {
+            lineup = [];
+        }
+        const uniquePlayers = Array.from(new Set(lineup.map((id) => String(id).trim()).filter(Boolean)));
+        if (uniquePlayers.length >= 5) {
+            return uniquePlayers.slice(0, 5);
+        }
+        const result = [...uniquePlayers];
+        for (let i = result.length; i < 5; i++) {
+            result.push(`UNKNOWN_${i + 1}`);
+        }
+        return result;
+    }
     async processJob(jobId) {
         const job = this.jobs.get(jobId);
         if (!job) {
@@ -214,9 +228,7 @@ let AnalysisService = class AnalysisService {
                     ...match.opponentOffensePossessions,
                 ];
                 for (const possession of combinedPossessions) {
-                    const normalizedLineup = Array.from(new Set((possession.ownLineup || [])
-                        .map((id) => String(id).trim())
-                        .filter(Boolean))).sort((a, b) => a.localeCompare(b));
+                    const normalizedLineup = this.ensureLineupHasFivePlayers(possession.ownLineup || []).sort((a, b) => a.localeCompare(b));
                     if (normalizedLineup.length === 0) {
                         continue;
                     }

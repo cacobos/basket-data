@@ -1,14 +1,4 @@
 {
   "version": 2,
-  "outputDirectory": "angular-app/dist/angular-app/browser",
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/server.ts"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
+  "outputDirectory": "angular-app/dist/angular-app/browser"
 }

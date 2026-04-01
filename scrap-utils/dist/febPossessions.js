@@ -167,6 +167,34 @@ function pushLineupPlayer(teamLineup, playerId, lastSeenOrder, eventOrder) {
 function cloneSorted(set) {
     return Array.from(set.values()).sort((a, b) => a.localeCompare(b));
 }
+function ensureLineupHasFivePlayers(teamLineup, lastSeenOrder) {
+    // Si ya tiene 5 o más, recorta a los 5 más recientes
+    if (teamLineup.size >= 5) {
+        const best = Array.from(teamLineup.values())
+            .map((id) => ({ id, seen: lastSeenOrder.get(id) ?? -1 }))
+            .sort((a, b) => b.seen - a.seen)
+            .slice(0, 5)
+            .map((item) => item.id);
+        teamLineup.clear();
+        for (const id of best) {
+            teamLineup.add(id);
+        }
+        return;
+    }
+    // Si tiene menos de 5, intenta completar con los más recientes históricos
+    const fallbackCandidates = Array.from(lastSeenOrder.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([playerId]) => playerId)
+        .filter((playerId) => !teamLineup.has(playerId));
+    for (const playerId of fallbackCandidates) {
+        teamLineup.add(playerId);
+        if (teamLineup.size >= 5) {
+            break;
+        }
+    }
+    // Si tras llenar con históricos aún tiene menos de 5, es dato corrupto/incompleto,
+    // pero dejamos lo que hay para no silenciar el problema.
+}
 function seedInitialLineups(lines, teamAId, teamBId, lineupA, lineupB, seenA, seenB) {
     for (const line of lines) {
         if (!line.idTeam || !line.idPlayer) {
@@ -233,6 +261,8 @@ function buildFebPossessionTimeline(result) {
     let possessionTeamId = null;
     const possessions = [];
     const addPossession = (lineIndex, line, newPossessionTeamId, resultType, changeReason, points, reboundPlayerId, extraRelatedDescriptions = []) => {
+        ensureLineupHasFivePlayers(lineupA, seenA);
+        ensureLineupHasFivePlayers(lineupB, seenB);
         const related = buildRelatedDescriptions(lines, lineIndex);
         const mergedRelated = [...extraRelatedDescriptions, ...related.related];
         possessions.push({

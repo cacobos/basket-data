@@ -32,3 +32,4 @@ npm-debug.log*
 # Coverage
 coverage/
 *.lcov
+.vercel
