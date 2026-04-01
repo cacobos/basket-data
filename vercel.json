@@ -1,21 +1,19 @@
 {
   "version": 2,
-  "buildCommand": "cd nest-api && npm run build && cd ../angular-app && npm run build && cd ..",
-  "framework": "nestjs",
+  "public": "angular-app/dist/angular-app/browser",
   "functions": {
     "api/server.ts": {
-      "maxDuration": 60
+      "@vercel/node": {}
     }
   },
-  "public": "angular-app/dist/angular-app/browser",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/server.ts"
+      "source": "/api/(.*)",
+      "destination": "/api/server.ts"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
