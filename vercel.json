@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "public": "angular-app/dist/angular-app/browser",
+  "outputDirectory": "angular-app/dist/angular-app/browser",
   "rewrites": [
     {
       "source": "/api/(.*)",
