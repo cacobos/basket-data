@@ -310,10 +310,21 @@ function ensureLineupHasFivePlayers(
   teamLineup: Set<string>,
   lastSeenOrder: Map<string, number>,
 ): void {
+  // Si ya tiene 5 o más, recorta a los 5 más recientes
   if (teamLineup.size >= 5) {
+    const best = Array.from(teamLineup.values())
+      .map((id) => ({ id, seen: lastSeenOrder.get(id) ?? -1 }))
+      .sort((a, b) => b.seen - a.seen)
+      .slice(0, 5)
+      .map((item) => item.id);
+    teamLineup.clear();
+    for (const id of best) {
+      teamLineup.add(id);
+    }
     return;
   }
 
+  // Si tiene menos de 5, intenta completar con los más recientes históricos
   const fallbackCandidates = Array.from(lastSeenOrder.entries())
     .sort((a, b) => b[1] - a[1])
     .map(([playerId]) => playerId)
@@ -325,6 +336,9 @@ function ensureLineupHasFivePlayers(
       break;
     }
   }
+
+  // Si tras llenar con históricos aún tiene menos de 5, es dato corrupto/incompleto,
+  // pero dejamos lo que hay para no silenciar el problema.
 }
 
 function seedInitialLineups(

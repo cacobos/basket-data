@@ -247,6 +247,29 @@ export class AnalysisService {
     };
   }
 
+  private ensureLineupHasFivePlayers(lineup: string[]): string[] {
+    if (!Array.isArray(lineup)) {
+      lineup = [];
+    }
+
+    const uniquePlayers = Array.from(
+      new Set(lineup.map((id) => String(id).trim()).filter(Boolean)),
+    );
+
+    // Si tiene 5 o más, toma los primeros 5 (ya están ordenados alfabéticamente en la fuente)
+    if (uniquePlayers.length >= 5) {
+      return uniquePlayers.slice(0, 5);
+    }
+
+    // Si tiene menos de 5, rellena con placeholders para mantener formato consistente
+    const result = [...uniquePlayers];
+    for (let i = result.length; i < 5; i++) {
+      result.push(`UNKNOWN_${i + 1}`);
+    }
+
+    return result;
+  }
+
   private async processJob(jobId: string): Promise<void> {
     const job = this.jobs.get(jobId);
     if (!job) {
@@ -387,12 +410,8 @@ export class AnalysisService {
         ];
 
         for (const possession of combinedPossessions) {
-          const normalizedLineup = Array.from(
-            new Set(
-              (possession.ownLineup || [])
-                .map((id) => String(id).trim())
-                .filter(Boolean),
-            ),
+          const normalizedLineup = this.ensureLineupHasFivePlayers(
+            possession.ownLineup || [],
           ).sort((a, b) => a.localeCompare(b));
 
           if (normalizedLineup.length === 0) {
