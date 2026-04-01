@@ -1,33 +1,21 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "nest-api/package.json",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["dist/**"],
-        "excludeFiles": ["node_modules/**"]
-      }
-    },
-    {
-      "src": "angular-app/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist/angular-app"
-      }
+  "buildCommand": "npm run build",
+  "framework": "nestjs",
+  "functions": {
+    "api/server.ts": {
+      "maxDuration": 60
     }
-  ],
+  },
+  "public": "angular-app/dist/angular-app/browser",
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "nest-api/dist/main.js"
+      "dest": "/api/server.ts"
     },
     {
       "src": "/(.*)",
-      "dest": "/angular-app/dist/angular-app/browser/index.html"
+      "dest": "/index.html"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  ]
 }
