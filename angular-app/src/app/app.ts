@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -8,10 +9,9 @@ import { RouterLink, RouterOutlet } from '@angular/router';
   imports: [CommonModule, RouterLink, RouterOutlet],
   template: `
     <div class="app-root">
-      <!-- Navbar -->
       <nav class="navbar">
         <div class="nav-container">
-          <a routerLink="/" class="logo"> 🏀 FEB Data Analyzer </a>
+          <a routerLink="/" class="logo">🏀 Basket Data</a>
           <div class="nav-links">
             <a
               routerLink="/"
@@ -21,20 +21,25 @@ import { RouterLink, RouterOutlet } from '@angular/router';
             >
               Inicio
             </a>
-            <a routerLink="/analyzer" class="nav-link" routerLinkActive="active"> Analizador </a>
-            <a routerLink="/jobs" class="nav-link" routerLinkActive="active"> Trabajos </a>
+            <a routerLink="/analyzer" class="nav-link" routerLinkActive="active"> Nueva busqueda </a>
+            <a routerLink="/busquedas" class="nav-link" routerLinkActive="active"> Mis busquedas </a>
+          </div>
+
+          <div class="auth-actions">
+            <a *ngIf="!auth.isSignedIn()" routerLink="/acceso" class="auth-link">Acceder</a>
+            <button *ngIf="auth.isSignedIn()" class="auth-logout" (click)="logout()">
+              Cerrar sesion
+            </button>
           </div>
         </div>
       </nav>
 
-      <!-- Main Content -->
       <main class="main-content">
         <router-outlet></router-outlet>
       </main>
 
-      <!-- Footer -->
       <footer class="footer">
-        <p>&copy; 2024 FEB Data Analyzer. Datos en vivo de la Federación Española de Baloncesto.</p>
+        <p>&copy; 2026 Basket Data. Busquedas guiadas de baloncesto con datos oficiales FEB.</p>
       </footer>
     </div>
   `,
@@ -83,6 +88,30 @@ import { RouterLink, RouterOutlet } from '@angular/router';
       gap: 30px;
     }
 
+    .auth-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .auth-link,
+    .auth-logout {
+      border: 1px solid #c7d2e7;
+      border-radius: 999px;
+      padding: 8px 14px;
+      background: white;
+      color: #334;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .auth-link:hover,
+    .auth-logout:hover {
+      border-color: #0b6f7f;
+      color: #0b6f7f;
+    }
+
     .nav-link {
       color: #666;
       text-decoration: none;
@@ -123,19 +152,26 @@ import { RouterLink, RouterOutlet } from '@angular/router';
     }
 
     @media (max-width: 768px) {
-      .nav-links {
-        gap: 15px;
-        font-size: 0.9rem;
-      }
-
-      .logo {
-        font-size: 1.2rem;
-      }
-
       .nav-container {
-        height: 60px;
+        height: auto;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        align-items: flex-start;
+        gap: 10px;
+        flex-direction: column;
+      }
+
+      .nav-links {
+        gap: 12px;
+        font-size: 0.9rem;
       }
     }
   `,
 })
-export class App {}
+export class App {
+  constructor(public readonly auth: AuthService) {}
+
+  logout(): void {
+    this.auth.logout().catch(() => undefined);
+  }
+}

@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { RuntimeConfig } from './runtime-config';
 
 export interface AnalysisRequest {
   matchIds: number[];
@@ -83,6 +84,15 @@ export interface FebActionPlayersResult {
   players: FebActionPlayer[];
 }
 
+export interface FebPlayerProfile {
+  playerId: string;
+  teamId: string;
+  name: string;
+  photoUrl: string;
+  profileUrl: string;
+  attributes: Record<string, string>;
+}
+
 export interface FebTeamMatch {
   matchId: string;
   ownTeamId: string;
@@ -134,9 +144,19 @@ export interface AnalysisResult {
 
 @Injectable({ providedIn: 'root' })
 export class AnalysisApiService {
-  private readonly apiBase = 'http://localhost:3000';
+  private readonly apiBase = this.resolveApiBaseUrl();
 
   constructor(private readonly http: HttpClient) {}
+
+  private resolveApiBaseUrl(): string {
+    const runtime = window.__BASKET_DATA_CONFIG__ || {};
+    const configured = (runtime.apiBaseUrl || '').trim().replace(/\/$/, '');
+    if (configured) {
+      return configured;
+    }
+
+    return 'http://localhost:3000';
+  }
 
   createJob(payload: AnalysisRequest): Observable<AnalysisJob> {
     return this.http.post<AnalysisJob>(`${this.apiBase}/analysis/jobs`, payload);
@@ -189,7 +209,18 @@ export class AnalysisApiService {
     return this.http.get<FebTeamMatchesResult>(`${this.apiBase}/feb/teams/${teamId}/matches`);
   }
 
-  getJobEventsUrl(jobId: string): string {
-    return `${this.apiBase}/analysis/jobs/${jobId}/events`;
+  getPlayerById(playerId: string, teamId: string): Observable<FebPlayerProfile> {
+    return this.http.get<FebPlayerProfile>(
+      `${this.apiBase}/feb/players/${encodeURIComponent(playerId)}?teamId=${encodeURIComponent(teamId)}`,
+    );
+  }
+
+  getJobEventsUrl(jobId: string, authToken?: string): string {
+    const base = `${this.apiBase}/analysis/jobs/${jobId}/events`;
+    if (!authToken) {
+      return base;
+    }
+
+    return `${base}?authToken=${encodeURIComponent(authToken)}`;
   }
 }

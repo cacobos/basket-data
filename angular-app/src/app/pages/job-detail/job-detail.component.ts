@@ -59,10 +59,10 @@ interface QuintetRow {
     <div class="job-detail" *ngIf="job(); else notFound">
       <section class="top-compact">
         <div class="top-row">
-          <a routerLink="/jobs" class="back">← Jobs</a>
+          <a routerLink="/busquedas" class="back">← Busquedas</a>
           <app-status-badge [status]="job()!.status"></app-status-badge>
         </div>
-        <h1>Detalle de job</h1>
+        <h1>Detalle de busqueda</h1>
         <p class="meta-mini">
           {{ displayTeamName() }} · {{ job()!.matchIds.length }} partidos ·
           {{ formatDate(job()!.updatedAt) }}
@@ -311,10 +311,10 @@ interface QuintetRow {
       <ng-template #pending>
         <section class="pending">
           <p *ngIf="job()!.status === 'processing' || job()!.status === 'queued'">
-            El job sigue en proceso.
+            La busqueda sigue en proceso.
           </p>
           <p *ngIf="job()!.status === 'failed'">
-            El job falló: {{ job()!.errorMessage || 'sin detalle' }}
+            La busqueda fallo: {{ job()!.errorMessage || 'sin detalle' }}
           </p>
           <button class="ghost" (click)="refreshResult()" *ngIf="job()!.status !== 'failed'">
             Actualizar resultado
@@ -324,7 +324,7 @@ interface QuintetRow {
     </div>
 
     <ng-template #notFound>
-      <p>No se encontró el job.</p>
+      <p>No se encontro la busqueda.</p>
     </ng-template>
   `,
   styles: `
@@ -516,6 +516,7 @@ export class JobDetailComponent {
   readonly pageSize = 5;
 
   private playerMap = signal<Record<string, { name: string; photoUrl: string }>>({});
+  private resolvingPlayerNames = new Set<string>();
 
   job = computed(() => {
     const id = this.jobId();
@@ -669,7 +670,7 @@ export class JobDetailComponent {
       this.jobId.set(id);
       const job = id ? this.jobsStore.getJob(id) : null;
       if (!id || !job) {
-        this.router.navigate(['/jobs']);
+        this.router.navigate(['/busquedas']);
         return;
       }
 
@@ -688,6 +689,7 @@ export class JobDetailComponent {
               };
             }
             this.playerMap.set(map);
+            this.resolveMissingPlayerNames(teamId);
           },
           error: () => undefined,
         });
@@ -713,12 +715,91 @@ export class JobDetailComponent {
                 };
               }
               this.playerMap.set(map);
+              this.resolveMissingPlayerNames(teamId);
             },
             error: () => undefined,
           });
         }
+
+        this.resolveMissingPlayerNames(teamId);
       }
     });
+  }
+
+  private collectLineupPlayerIds(): string[] {
+    const ids = new Set<string>();
+    const matches = ((this.job()?.result?.matches || []) as MatchResult[]) || [];
+
+    for (const match of matches) {
+      const ownRows =
+        match.ownOffensePossessions ||
+        (match.possessions || []).filter((item) => item.side === 'own_offense');
+      const oppRows =
+        match.opponentOffensePossessions ||
+        (match.possessions || []).filter((item) => item.side === 'opponent_offense');
+
+      for (const row of [...ownRows, ...oppRows]) {
+        for (const playerId of row.ownLineup || []) {
+          const normalized = String(playerId || '').trim();
+          if (/^\d+$/.test(normalized)) {
+            ids.add(normalized);
+          }
+        }
+      }
+    }
+
+    return Array.from(ids);
+  }
+
+  private isGenericPlayerName(name: string | undefined, playerId: string): boolean {
+    const normalized = String(name || '').trim();
+    if (!normalized) {
+      return true;
+    }
+
+    return (
+      normalized.toLowerCase() === `jugador ${playerId}`.toLowerCase() ||
+      normalized.toLowerCase() === `player ${playerId}`.toLowerCase()
+    );
+  }
+
+  private resolveMissingPlayerNames(teamId: string): void {
+    const ids = this.collectLineupPlayerIds().slice(0, 30);
+    if (ids.length === 0) {
+      return;
+    }
+
+    const snapshot = this.playerMap();
+    for (const playerId of ids) {
+      const currentName = snapshot[playerId]?.name;
+      const shouldResolve = this.isGenericPlayerName(currentName, playerId);
+      if (!shouldResolve || this.resolvingPlayerNames.has(playerId)) {
+        continue;
+      }
+
+      this.resolvingPlayerNames.add(playerId);
+      this.api.getPlayerById(playerId, teamId).subscribe({
+        next: (profile) => {
+          const name = String(profile?.name || '').trim();
+          const photoUrl = String(profile?.photoUrl || '').trim();
+          if (!name || this.isGenericPlayerName(name, playerId)) {
+            return;
+          }
+
+          this.playerMap.update((map) => ({
+            ...map,
+            [playerId]: {
+              name,
+              photoUrl: photoUrl || map[playerId]?.photoUrl || '',
+            },
+          }));
+        },
+        error: () => undefined,
+        complete: () => {
+          this.resolvingPlayerNames.delete(playerId);
+        },
+      });
+    }
   }
 
   private applyCommonFilters(rows: FilterablePlay[]): FilterablePlay[] {
@@ -786,7 +867,11 @@ export class JobDetailComponent {
 
   playerLabel(playerId: string): string {
     const player = this.playerMap()[playerId];
-    return player?.name || 'Jugadora';
+    const name = String(player?.name || '').trim();
+    if (name) {
+      return name;
+    }
+    return `Jugador ${playerId}`;
   }
 
   playerPhoto(playerId: string): string | null {

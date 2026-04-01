@@ -19,8 +19,8 @@ import { JobsStoreService, JobState } from '../../services/jobs-store.service';
   template: `
     <div class="analyzer-page">
       <header class="hero">
-        <h1>Analizador FEB</h1>
-        <p>Flujo completo con carrusel: liga, grupo, equipo, partidos y ejecución de job.</p>
+        <h1>Nueva busqueda</h1>
+        <p>Flujo guiado: competicion, grupo, equipo y ejecucion automatica.</p>
       </header>
 
       <section class="carousel-shell">
@@ -50,7 +50,7 @@ import { JobsStoreService, JobState } from '../../services/jobs-store.service';
             [disabled]="!selectedTeamId()"
             (click)="goToSlide(3)"
           >
-            4. Lanzar Job
+            4. Ejecutar
           </button>
         </div>
 
@@ -103,16 +103,16 @@ import { JobsStoreService, JobState } from '../../services/jobs-store.service';
             </section>
 
             <section class="slide">
-              <h2>Lanzar búsqueda</h2>
+              <h2>Lanzar busqueda</h2>
               <p class="muted">
-                Los partidos se resolverán automáticamente en backend al crear el job.
+                Los partidos se resolveran automaticamente al crear la busqueda.
               </p>
 
               <div class="launch-row">
                 <button class="primary" [disabled]="isLaunchDisabled()" (click)="launchJob()">
-                  {{ launching() ? 'Lanzando...' : 'Lanzar job de búsqueda' }}
+                  {{ launching() ? 'Lanzando...' : 'Lanzar busqueda' }}
                 </button>
-                <button class="ghost" (click)="goJobs()">Ver tabla de jobs</button>
+                <button class="ghost" (click)="goJobs()">Ver mis busquedas</button>
               </div>
               <p class="muted" *ngIf="launchError()">{{ launchError() }}</p>
             </section>
@@ -396,17 +396,17 @@ export class AnalyzerComponent {
         this.jobsStore.addJob(state);
         this.jobsStore.trackJob(job.id);
         this.launching.set(false);
-        this.router.navigate(['/jobs']);
+        this.router.navigate(['/busquedas']);
       },
       error: (err) => {
         this.launching.set(false);
-        this.launchError.set('No se pudo crear el job.');
+        this.launchError.set('No se pudo crear la busqueda.');
         console.error(err);
       },
     });
   }
 
   goJobs(): void {
-    this.router.navigate(['/jobs']);
+    this.router.navigate(['/busquedas']);
   }
 }

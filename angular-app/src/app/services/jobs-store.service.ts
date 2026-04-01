@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { AnalysisApiService, AnalysisResult } from '../analysis-api.service';
+import { AuthService } from './auth.service';
 
 export interface JobState {
   jobId: string;
@@ -32,7 +33,10 @@ export class JobsStoreService {
   private readonly eventSources = new Map<string, EventSource>();
   private readonly checkingJobStatus = new Set<string>();
 
-  constructor(private readonly api: AnalysisApiService) {
+  constructor(
+    private readonly api: AnalysisApiService,
+    private readonly auth: AuthService,
+  ) {
     this.loadJobs();
     this.pruneExpiredJobs();
   }
@@ -96,7 +100,12 @@ export class JobsStoreService {
       return;
     }
 
-    const source = new EventSource(this.api.getJobEventsUrl(jobId));
+    void this.openEventSource(jobId);
+  }
+
+  private async openEventSource(jobId: string): Promise<void> {
+    const token = await this.auth.getIdToken();
+    const source = new EventSource(this.api.getJobEventsUrl(jobId, token || undefined));
     this.eventSources.set(jobId, source);
 
     source.addEventListener('status', (event) => {

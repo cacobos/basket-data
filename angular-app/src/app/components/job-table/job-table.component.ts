@@ -33,7 +33,7 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
             <td class="actions">
               <a
                 class="btn-detail"
-                [routerLink]="['/jobs', job.jobId]"
+                [routerLink]="['/busquedas', job.jobId]"
                 *ngIf="job.status === 'completed' || job.status === 'failed'"
                 title="Ver detalle"
               >
@@ -49,8 +49,8 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
 
       <ng-template #emptyState>
         <div class="empty-state">
-          <p>📭 No hay trabajos aún</p>
-          <p class="hint">Comienza en el Analizador</p>
+          <p>📭 No hay busquedas todavia</p>
+          <p class="hint">Empieza en Nueva busqueda</p>
         </div>
       </ng-template>
     </div>

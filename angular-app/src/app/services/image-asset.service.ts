@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
+import { RuntimeConfig } from '../runtime-config';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ImageAssetService {
-  private readonly imageProxyBase = 'http://localhost:3000/feb/image?url=';
+  private readonly imageProxyBase = `${this.resolveApiBaseUrl()}/feb/image?url=`;
 
   private readonly fallbackLeagueLogo = this.buildPlaceholder('Liga', '#0b6f7f');
   private readonly fallbackTeamShield = this.buildPlaceholder('Equipo', '#0f9e8f');
@@ -66,5 +67,15 @@ export class ImageAssetService {
 
   private toProxyUrl(url: string): string {
     return `${this.imageProxyBase}${encodeURIComponent(url)}`;
+  }
+
+  private resolveApiBaseUrl(): string {
+    const runtime = window.__BASKET_DATA_CONFIG__ || {};
+    const configured = (runtime.apiBaseUrl || '').trim().replace(/\/$/, '');
+    if (configured) {
+      return configured;
+    }
+
+    return 'http://localhost:3000';
   }
 }

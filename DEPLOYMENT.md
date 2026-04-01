@@ -31,7 +31,7 @@ Opciones:
 - "Set up and deploy?" → Yes
 - "Which scope should contain your project?" → Tu usuario/equipo
 - "Link to existing project?" → No (crear nuevo)
-- "What's your project's name?" → `prueba-scrap`
+- "What's your project's name?" → `basket-data`
 - "In which directory is your code?" → `.` (raíz)
 - "Want to modify the settings?" → Yes
 
@@ -56,8 +56,8 @@ vercel env add DATABASE_URL
 
 ```bash
 vercel env add NODE_ENV production
-vercel env add API_URL https://prueba-scrap.vercel.app/api
-vercel env add FRONTEND_URL https://prueba-scrap.vercel.app
+vercel env add API_URL https://basket-data.vercel.app/api
+vercel env add FRONTEND_URL https://basket-data.vercel.app
 ```
 
 ### 5. Hacer Deploy
@@ -103,8 +103,8 @@ npx prisma migrate deploy  # Ejecuta migraciones en BD remota
 ## Estructura Post-Deploy
 
 ```
-https://prueba-scrap.vercel.app/           → Frontend (Angular)
-https://prueba-scrap.vercel.app/api/*      → Backend (NestJS)
+https://basket-data.vercel.app/           → Frontend (Angular)
+https://basket-data.vercel.app/api/*      → Backend (NestJS)
 ```
 
 ## Próximos Pasos

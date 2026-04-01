@@ -11,8 +11,10 @@ import { RouterLink } from '@angular/router';
       <!-- Hero Section -->
       <section class="hero">
         <div class="hero-content">
-          <h1>FEB Data Analyzer</h1>
-          <p class="subtitle">Analiza partidos, jugadores y estadísticas de la Liga ACB y LEB</p>
+          <h1>Basket Data</h1>
+          <p class="subtitle">
+            Convierte estadisticas complejas en respuestas claras para entrenadores y staff.
+          </p>
         </div>
       </section>
 
@@ -20,29 +22,30 @@ import { RouterLink } from '@angular/router';
       <section class="features">
         <div class="feature-card">
           <div class="feature-icon">📊</div>
-          <h2>Analizador</h2>
+          <h2>Nueva busqueda guiada</h2>
           <p>
-            Selecciona competición, equipo, partido y acciones. Obtén datos en tiempo real de
-            jugadores en cancha.
+            Elige competicion y equipo en 4 pasos simples. Nosotros hacemos el procesamiento por
+            ti.
           </p>
-          <a class="btn btn-primary" routerLink="/analyzer">Ir al Analizador →</a>
+          <a class="btn btn-primary" routerLink="/analyzer">Empezar ahora →</a>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon">📋</div>
-          <h2>Historial de Trabajos</h2>
+          <h2>Mis busquedas</h2>
           <p>
-            Accede a todos tus análisis anteriores. Visualiza el estado y resultados de cada
-            solicitud.
+            Consulta resultados anteriores, filtra por estado y abre cada analisis cuando lo
+            necesites.
           </p>
-          <a class="btn btn-secondary" routerLink="/jobs">Ver Trabajos →</a>
+          <a class="btn btn-secondary" routerLink="/busquedas">Ver busquedas →</a>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon">⚡</div>
-          <h2>Datos en Vivo</h2>
+          <h2>Datos oficiales FEB</h2>
           <p>
-            Obtén información actualizada directamente de la FEB. Sin datos ficticios, todo real.
+            Trabaja con informacion actualizada directamente desde la FEB para tomar decisiones con
+            contexto real.
           </p>
           <div class="badge">Actualizado constantemente</div>
         </div>
@@ -50,46 +53,46 @@ import { RouterLink } from '@angular/router';
 
       <!-- Info Section -->
       <section class="info">
-        <h2>¿Cómo funciona?</h2>
+        <h2>Como funciona</h2>
         <div class="steps">
           <div class="step">
             <span class="step-number">1</span>
-            <h3>Selecciona Liga</h3>
-            <p>Elige entre Liga ACB, ACB Plata o LEB</p>
+            <h3>Elige competicion</h3>
+            <p>Selecciona la liga o categoria que vas a revisar</p>
           </div>
           <div class="step">
             <span class="step-number">2</span>
-            <h3>Elige Equipo</h3>
-            <p>Selecciona el equipo que quieres analizar</p>
+            <h3>Selecciona equipo</h3>
+            <p>Marca el equipo sobre el que quieres obtener informacion</p>
           </div>
           <div class="step">
             <span class="step-number">3</span>
-            <h3>Filtra Partidos</h3>
-            <p>Elige qué partidos usar para el análisis</p>
+            <h3>Confirma grupo</h3>
+            <p>Si aplica, elige grupo para acotar la busqueda</p>
           </div>
           <div class="step">
             <span class="step-number">4</span>
-            <h3>Selecciona Acciones</h3>
-            <p>Filtra por tipo de acción (canasta, asistencia, etc.)</p>
+            <h3>Lanza la busqueda</h3>
+            <p>Inicia el procesamiento con un clic</p>
           </div>
           <div class="step">
             <span class="step-number">5</span>
-            <h3>Configura Filtros</h3>
-            <p>Personaliza criterios (victorias, anotadores, etc.)</p>
+            <h3>Abre resultados</h3>
+            <p>Revisa tablas de posesiones y quintetos filtrables</p>
           </div>
           <div class="step">
             <span class="step-number">6</span>
-            <h3>Ejecuta Análisis</h3>
-            <p>Lanza el análisis y obtén los resultados</p>
+            <h3>Comparte insights</h3>
+            <p>Exporta JSON o CSV para compartir con tu equipo tecnico</p>
           </div>
         </div>
       </section>
 
       <!-- CTA -->
       <section class="cta">
-        <h2>Comienza ahora</h2>
-        <p>Accede al analizador para obtener insights profundos de tus datos de baloncesto</p>
-        <a class="btn btn-large" routerLink="/analyzer">Ir al Analizador</a>
+        <h2>Empieza en menos de 1 minuto</h2>
+        <p>Crea tu primera busqueda y consulta resultados claros, sin lenguaje tecnico.</p>
+        <a class="btn btn-large" routerLink="/analyzer">Crear nueva busqueda</a>
       </section>
     </div>
   `,

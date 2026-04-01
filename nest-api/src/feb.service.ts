@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { load } from 'cheerio';
+import { existsSync } from 'fs';
 import * as path from 'path';
 import { pathToFileURL } from 'url';
 
@@ -249,13 +250,21 @@ export class FebService {
       return this.cachedModule;
     }
 
-    const modulePath = path.resolve(
-      process.cwd(),
-      '..',
-      'scrap-utils',
-      'dist',
-      'index.js',
-    );
+    const candidatePaths = [
+      path.resolve(process.cwd(), 'api', 'scrap-utils', 'index.js'),
+      path.resolve(process.cwd(), 'api', 'scrap-utils', 'dist', 'index.js'),
+      path.resolve(process.cwd(), 'scrap-utils', 'dist', 'index.js'),
+      path.resolve(process.cwd(), '..', 'scrap-utils', 'dist', 'index.js'),
+      path.resolve(process.cwd(), '..', '..', 'scrap-utils', 'dist', 'index.js'),
+    ];
+
+    const modulePath = candidatePaths.find((candidate) => existsSync(candidate));
+    if (!modulePath) {
+      throw new NotFoundException(
+        'No se encontró scrap-utils/dist/index.js. Ejecuta build de scrap-utils o revisa el despliegue.',
+      );
+    }
+
     const moduleUrl = pathToFileURL(modulePath).href;
     const imported = (await import(moduleUrl)) as unknown as ScrapUtilsModule;
     this.cachedModule = imported;

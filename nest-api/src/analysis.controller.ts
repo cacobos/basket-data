@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Sse,
+  UseGuards,
 } from '@nestjs/common';
 import { map, Observable } from 'rxjs';
 import {
@@ -14,8 +15,10 @@ import {
   type AnalysisRequest,
   type AnalysisResult,
 } from './analysis.service';
+import { FirebaseAuthGuard } from './auth/firebase-auth.guard';
 
 @Controller('analysis')
+@UseGuards(FirebaseAuthGuard)
 export class AnalysisController {
   constructor(private readonly analysisService: AnalysisService) {}
 

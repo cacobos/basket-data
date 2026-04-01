@@ -11,8 +11,8 @@ import { JobsStoreService } from '../../services/jobs-store.service';
   template: `
     <div class="jobs-list-container">
       <header class="jobs-header">
-        <h1>📋 Historial de Trabajos</h1>
-        <p>Visualiza todos tus análisis y sus resultados</p>
+        <h1>📋 Mis busquedas</h1>
+        <p>Consulta tus analisis guardados y su estado</p>
       </header>
 
       <div class="filters">

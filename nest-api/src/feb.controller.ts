@@ -6,6 +6,7 @@ import {
   ParseIntPipe,
   Query,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import {
@@ -17,6 +18,7 @@ import {
   FebTeamMatchesResult,
   FebTeamPlayersResult,
 } from './feb.service';
+import { FirebaseAuthGuard } from './auth/firebase-auth.guard';
 
 @Controller('feb')
 export class FebController {
@@ -59,11 +61,13 @@ export class FebController {
   }
 
   @Get('leagues')
+  @UseGuards(FirebaseAuthGuard)
   async getLeagues(): Promise<FebLeague[]> {
     return this.febService.getLeagues();
   }
 
   @Get('leagues/:leagueId/teams')
+  @UseGuards(FirebaseAuthGuard)
   async getLeagueTeams(
     @Param('leagueId', ParseIntPipe) leagueId: number,
     @Query('seasonId') seasonId = '2025',
@@ -74,6 +78,7 @@ export class FebController {
   }
 
   @Get('teams/:teamId/players')
+  @UseGuards(FirebaseAuthGuard)
   async getTeamPlayers(
     @Param('teamId', ParseIntPipe) teamId: number,
   ): Promise<FebTeamPlayersResult> {
@@ -81,6 +86,7 @@ export class FebController {
   }
 
   @Get('teams/:teamId/action-players')
+  @UseGuards(FirebaseAuthGuard)
   async getActionPlayers(
     @Param('teamId', ParseIntPipe) teamId: number,
     @Query('matchIds') matchIds = '',
@@ -94,6 +100,7 @@ export class FebController {
   }
 
   @Get('teams/:teamId/matches')
+  @UseGuards(FirebaseAuthGuard)
   async getTeamMatches(
     @Param('teamId', ParseIntPipe) teamId: number,
   ): Promise<FebTeamMatchesResult> {
@@ -101,6 +108,7 @@ export class FebController {
   }
 
   @Get('players/:playerId')
+  @UseGuards(FirebaseAuthGuard)
   async getPlayerById(
     @Param('playerId', ParseIntPipe) playerId: number,
     @Query('teamId') teamId?: string,

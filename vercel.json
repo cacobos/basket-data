@@ -1,4 +1,12 @@
 {
   "version": 2,
-  "outputDirectory": "angular-app/dist/angular-app/browser"
+  "installCommand": "npm install --prefix angular-app",
+  "buildCommand": "npm run vercel-build --prefix angular-app",
+  "outputDirectory": "angular-app/dist/angular-app/browser",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
